@@ -12,7 +12,11 @@
 
 static void assert_game_unchanged(const Game *expected, const Game *actual)
 {
-    assert(memcmp(expected, actual, sizeof(*expected)) == 0);
+    if (expected == NULL || actual == NULL ||
+        memcmp(expected, actual, sizeof(*expected)) != 0) {
+        fputs("game state was modified unexpectedly\n", stderr);
+        abort();
+    }
 }
 
 static void read_output(FILE *stream, char *buffer, size_t buffer_size)
