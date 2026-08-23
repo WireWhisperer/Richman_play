@@ -13,30 +13,33 @@ cd Richman_play
 
 ### 2. 使用 CMake 编译
 
-**Windows（MinGW，无需 Visual Studio）**
-
-先确认 `gcc` 和 `cmake` 在 PATH 中，然后**删除旧的 build 目录**（若之前配置失败过）：
+**Windows + Visual Studio（推荐）**
 
 ```powershell
-# 若 gcc 不在 PATH，先设置（按实际安装路径修改）
-$env:Path = "D:\Download\MinGW\bin;" + $env:Path
-
 Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
 
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTING=ON
+cmake --build build --config Debug
+ctest --test-dir build -C Debug --output-on-failure
+```
+
+若安装的是 VS 2019，将生成器改为 `"Visual Studio 16 2019"`。也可直接双击 **`build-cmake-vs.bat`**。
+
+| 文件 | 路径（VS） |
+|------|------|
+| 游戏程序 | `build\dist\Debug\rich_demo.exe` |
+| 地图文件 | `build\dist\Debug\map.json` |
+
+**Windows + MinGW（备选）**
+
+```powershell
+Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-或直接双击 **`build-cmake.bat`**（自动使用 MinGW 预设）。
-
-也可使用 CMake Preset：
-
-```powershell
-cmake --preset windows-mingw
-cmake --build --preset windows-mingw
-ctest --preset windows-mingw
-```
+或双击 **`build-cmake.bat`**。产物在 `build\dist\rich_demo.exe`。
 
 **Linux / macOS**
 
@@ -46,29 +49,13 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-> **常见错误**：若出现 `nmake` / `CMAKE_C_COMPILER not set`，说明 CMake 误用了 Visual Studio 生成器。请删除 `build` 文件夹，改用上面的 `-G "MinGW Makefiles"`。
-
-| 文件 | 路径 |
-|------|------|
-| 游戏程序 | `build/dist/rich_demo.exe`（Windows）或 `build/dist/rich_demo`（Linux） |
-| 地图文件 | `build/dist/map.json`（编译时自动复制） |
-
-运行自动化测试：
-
-```bash
-ctest --test-dir build --output-on-failure
-```
-
-Windows 多配置生成器（Visual Studio）需指定配置：
-
-```bash
-cmake --build build --config Debug
-ctest --test-dir build -C Debug --output-on-failure
-```
+> **常见错误**：若出现 `nmake` / `CMAKE_C_COMPILER not set`，请删除 `build` 文件夹，改用上面的 Visual Studio 命令（不要裸跑 `cmake -S . -B build`）。
 
 ### 3. 运行游戏
 
-**双击** `build/dist/rich_demo.exe` 即可开始（地图与程序在同一目录）。
+**Visual Studio 编译：** 双击 `build\dist\Debug\rich_demo.exe`
+
+**MinGW 编译：** 双击 `build\dist\rich_demo.exe`
 
 或在终端运行：
 
