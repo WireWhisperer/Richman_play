@@ -13,12 +13,40 @@ cd Richman_play
 
 ### 2. 使用 CMake 编译
 
+**Windows（MinGW，无需 Visual Studio）**
+
+先确认 `gcc` 和 `cmake` 在 PATH 中，然后**删除旧的 build 目录**（若之前配置失败过）：
+
+```powershell
+# 若 gcc 不在 PATH，先设置（按实际安装路径修改）
+$env:Path = "D:\Download\MinGW\bin;" + $env:Path
+
+Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+或直接双击 **`build-cmake.bat`**（自动使用 MinGW 预设）。
+
+也可使用 CMake Preset：
+
+```powershell
+cmake --preset windows-mingw
+cmake --build --preset windows-mingw
+ctest --preset windows-mingw
+```
+
+**Linux / macOS**
+
 ```bash
 cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build
+ctest --test-dir build --output-on-failure
 ```
 
-编译产物：
+> **常见错误**：若出现 `nmake` / `CMAKE_C_COMPILER not set`，说明 CMake 误用了 Visual Studio 生成器。请删除 `build` 文件夹，改用上面的 `-G "MinGW Makefiles"`。
 
 | 文件 | 路径 |
 |------|------|
