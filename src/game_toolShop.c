@@ -1,5 +1,6 @@
 #include "game.h"
 
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -8,18 +9,8 @@
 #define ROBOT_PRICE          30
 #define BOMB_PRICE           50
 
-/*
- * 道具屋公开接口（购买编号遵循规则手册）：
- *   0 = 退出，1 = 路障，2 = 机器娃娃，3 = 炸弹。
- */
-int tool_shop_enter(Game *g, char *message, size_t message_size);
-int tool_shop_show_catalog(char *buf, size_t bufsz);
-int tool_shop_view_inventory(const Game *g, char *buf, size_t bufsz);
-int tool_shop_buy(Game *g, int32_t choice,
-                  char *message, size_t message_size);
-int tool_shop_leave(Game *g, char *message, size_t message_size);
-int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
-                       char *message, size_t message_size);
+static int tool_shop_buy(Game *g, int32_t choice,
+                         char *message, size_t message_size);
 
 static void write_message(char *buf, size_t bufsz, const char *format, ...)
 {
@@ -83,7 +74,7 @@ int tool_shop_show_catalog(char *buf, size_t bufsz)
         "2. 机器娃娃（30点）：使用 robot 清除前方10步内的路障和炸弹。\n"
         "3. 炸弹（50点）：使用 bomb n 放在当前位置前后10步内；"
         "玩家经过时会被炸伤并送往医院。\n"
-        "0. 退出道具屋。每位玩家最多持有%d个道具。",
+        "F. 退出道具屋（不区分大小写）。每位玩家最多持有%d个道具。",
         MAX_ITEM_TOTAL);
     return RC_OK;
 }
@@ -111,7 +102,7 @@ int tool_shop_view_inventory(const Game *g, char *buf, size_t bufsz)
 int tool_shop_enter(Game *g, char *message, size_t message_size)
 {
     PLAYER *player = current_player(g);
-    char catalog[512];
+    char catalog[1024];
 
     if (player == NULL || player->position < 0 ||
         player->position >= MAP_SIZE ||
@@ -164,6 +155,52 @@ int tool_shop_leave(Game *g, char *message, size_t message_size)
     return RC_OK;
 }
 
+int tool_shop_answer(Game *g, const char *input,
+                     char *message, size_t message_size)
+{
+    const unsigned char *cursor = (const unsigned char *)input;
+    int32_t choice;
+
+    if (g == NULL || g->phase != PHASE_PROMPT ||
+        g->prompt != PROMPT_TOOL_SHOP) {
+        write_message(message, message_size,
+                      "输入失败：当前不在道具屋购买阶段。");
+        return -RC_INVALID_PHASE;
+    }
+    if (cursor == NULL) {
+        write_message(message, message_size,
+                      "输入无效：请输入1、2、3购买道具，或输入F退出。");
+        return -RC_INVALID_PARAMS;
+    }
+
+    while (isspace(*cursor)) {
+        ++cursor;
+    }
+
+    if (toupper(*cursor) == 'F') {
+        ++cursor;
+        while (isspace(*cursor)) {
+            ++cursor;
+        }
+        if (*cursor == '\0') {
+            return tool_shop_leave(g, message, message_size);
+        }
+    } else if (*cursor >= '1' && *cursor <= '3') {
+        choice = (int32_t)(*cursor - '0');
+        ++cursor;
+        while (isspace(*cursor)) {
+            ++cursor;
+        }
+        if (*cursor == '\0') {
+            return tool_shop_buy(g, choice, message, message_size);
+        }
+    }
+
+    write_message(message, message_size,
+                  "输入无效：请输入1、2、3购买道具，或输入F退出。");
+    return -RC_INVALID_PARAMS;
+}
+
 static int select_item(int32_t choice, ItemKind *kind,
                        int32_t *price, const char **name)
 {
@@ -206,7 +243,7 @@ static int8_t *item_count(PLAYER *player, ItemKind kind)
     }
 }
 
-int tool_shop_buy(Game *g, int32_t choice,
+static int tool_shop_buy(Game *g, int32_t choice,
                   char *message, size_t message_size)
 {
     PLAYER *player = current_player(g);
@@ -220,10 +257,6 @@ int tool_shop_buy(Game *g, int32_t choice,
         write_message(message, message_size,
                       "购买失败：当前不在道具屋购买阶段。");
         return -RC_INVALID_PHASE;
-    }
-
-    if (choice == 0) {
-        return tool_shop_leave(g, message, message_size);
     }
 
     if (player->credit < TOOL_SHOP_MIN_CREDIT) {
@@ -423,6 +456,11 @@ int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
                           "使用失败：背包中没有路障。");
             return -RC_INVALID_PARAMS;
         }
+        if (offset < -BLOCK_OFFSET_LIMIT || offset > BLOCK_OFFSET_LIMIT) {
+            write_message(message, message_size,
+                          "路障使用失败：距离须在-10到10之间。");
+            return -RC_INVALID_PARAMS;
+        }
         target = normalize_position((int32_t)player->position + offset);
         rc = game_block(g, offset);
         if (rc == RC_OK) {
@@ -438,6 +476,11 @@ int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
         if (player->items.BOMB <= 0) {
             write_message(message, message_size,
                           "使用失败：背包中没有炸弹。");
+            return -RC_INVALID_PARAMS;
+        }
+        if (offset < -BLOCK_OFFSET_LIMIT || offset > BLOCK_OFFSET_LIMIT) {
+            write_message(message, message_size,
+                          "炸弹使用失败：距离须在-10到10之间。");
             return -RC_INVALID_PARAMS;
         }
         target = normalize_position((int32_t)player->position + offset);

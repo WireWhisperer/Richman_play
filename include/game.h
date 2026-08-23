@@ -29,6 +29,12 @@ struct cJSON;
 #define MAX_DICE_SEQ      1024    /* 预置骰子序列上限 */
 #define MAX_BOARD_ITEMS    100    /* 地图道具/地产动态数组容量上限 */
 #define HOSPITAL_POS        14    /*医院位置*/
+#define JAIL_POS            49    /*监狱位置*/
+#define TOOL_POS            28    /*道具屋位置*/
+#define GIFT_POS            35    /*礼品屋位置*/
+#define MANUAL_INITIAL_FUND_DEFAULT 10000
+#define MANUAL_INITIAL_FUND_MIN      1000
+#define MANUAL_INITIAL_FUND_MAX     50000
 
 /* ===== 统一错误码（规范 13） ===== */
 typedef enum {
@@ -160,6 +166,8 @@ typedef struct {
 void game_init(Game *g);                                /* 初始化为空状态 */
 int  game_load_map(Game *g, const char *map_file);      /* 读取 map.json，0 成功，否则 RC_INVALID_MAP */
 void game_reset(Game *g);                               /* 完整重置：执行每个测试前必须调用 */
+int  game_apply_initial_fund(Game *g, int32_t initial_fund); /* 为已选玩家设置初始资金 */
+int  game_start_manual(Game *g, int32_t initial_fund);  /* 手动对局开局：四名玩家同额初始资金 */
 int  game_apply_preset(Game *g, const struct cJSON *preset);   /* 加载 Preset，0 成功 */
 const char *game_last_error(void);                      /* 最近一次游戏操作的错误描述 */
 
@@ -178,6 +186,7 @@ const char *prompt_to_str(PromptType p);
 int32_t property_total_invest(const Game *g, const Property *p); /* 购买价格 + level x 升级费用 */
 int32_t property_rent(const Game *g, const Property *p);         /* 投资总成本 / 2 */
 int32_t property_sell_price(const Game *g, const Property *p);   /* 投资总成本 x 2 */
+void get_rent(Game *g, Property p);
 
 /* ===== 查询 ===== */
 PLAYER *game_current_player(Game *g);
@@ -209,5 +218,9 @@ void game_next_turn(Game *g);                   /* 回合切换与轮空（规�
 void game_check_finish(Game *g);                /* 破产/结束判定 */
 void game_boarditem_suc(Game *g, BoardItem *b, int8_t index);               /*道具生效判定*/
 void game_remove_board_item(Game *g, int index);                            /*清除道具*/
+
+int tool_shop_enter(Game *g, char *message, size_t message_size);
+int tool_shop_answer(Game *g, const char *input,
+                     char *message, size_t message_size);
 
 #endif /* RICH_GAME_H */

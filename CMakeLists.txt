@@ -21,6 +21,11 @@ endfunction()
 
 add_library(richman_core
     src/game.c
+    src/game_mine.c
+    src/game_jail.c
+    src/game_toolShop.c
+    src/usr_action.c
+    src/usr_judge.c
     src/file_utils.c
     src/case_loader.c
     src/action_executor.c
@@ -29,10 +34,12 @@ add_library(richman_core
     src/test_runner.c
     src/manual_ui.c
     src/player_setup.c
+    third_party/cJSON/cJSON.c
 )
 
 target_include_directories(richman_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
 )
 richman_enable_warnings(richman_core)
 

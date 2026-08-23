@@ -1,20 +1,54 @@
 #include "game.h"
 
-int game_roll(Game *g) /* ROLL：使用预置骰子移动 */
-{
-    int move;
-    move = rand() % 5 + 1;
+#include <stdlib.h>
 
-    return move;
-}
-
-int game_step(Game *g, int32_t steps) /* STEP：按指定步数移动 */
+static int move_current_player(Game *g, int32_t steps)
 {
     int8_t last_position;
 
-    last_position = g->players[g->current_index].position;
-    g->players[g->current_index].position += steps;
-    g->players[g->current_index].position = g->players[g->current_index].position % 70;
+    if (g == NULL || g->current_index < 0 ||
+        g->current_index >= g->user_count) {
+        return RC_INVALID_PARAMS;
+    }
 
-    return last_position;
+    last_position = g->players[g->current_index].position;
+    (void)game_move_to(g, steps, last_position);
+    game_settle_landing(g);
+    game_next_turn(g);
+    return RC_OK;
+}
+
+int game_roll(Game *g)
+{
+    int32_t steps;
+
+    if (g == NULL) {
+        return RC_INVALID_PARAMS;
+    }
+    if (g->phase != PHASE_COMMAND || g->status != GAME_RUNNING) {
+        return RC_INVALID_PHASE;
+    }
+
+    if (g->dice_next < g->dice_count) {
+        steps = g->dice_seq[g->dice_next++];
+    } else {
+        steps = (int32_t)(rand() % DICE_MAX) + DICE_MIN;
+    }
+
+    return move_current_player(g, steps);
+}
+
+int game_step(Game *g, int32_t steps)
+{
+    if (g == NULL) {
+        return RC_INVALID_PARAMS;
+    }
+    if (g->phase != PHASE_COMMAND || g->status != GAME_RUNNING) {
+        return RC_INVALID_PHASE;
+    }
+    if (steps < DICE_MIN || steps > MAP_SIZE) {
+        return RC_INVALID_PARAMS;
+    }
+
+    return move_current_player(g, steps);
 }
