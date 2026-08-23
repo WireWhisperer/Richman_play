@@ -1,247 +1,201 @@
 /**
  * @file expected_checker.c
- * @brief Expected 部分匹配比较器（规范 v1.1 第 11 节）
- *
- * 算法：
- *   标量（字符串/数字/布尔/null）→ 完全相等；
- *   对象 → 递归部分匹配，只比对 expected 里写出的键；
- *   数组 → 按主键匹配，不按顺序、不比长度：
- *     players/id、properties/position、map_items/position、display_players/position；
- *   *_absent → 断言对应主键在 Actual 中不存在。
+ * @brief Expected 部分匹配比较实现（规范 11）。
  */
+
 #include "expected_checker.h"
 
-#include <inttypes.h>
-#include <stdio.h>
 #include <string.h>
 
-void match_error_init(MatchError *err)
+#include "cJSON.h"
+#include "game.h"
+
+/** 标量精确相等比较 */
+static int scalar_equal(const cJSON *a, const cJSON *e)
 {
-    memset(err, 0, sizeof(*err));
-    err->code = 0;
+    if (e == NULL) {
+        return 1;
+    }
+    if (a == NULL) {
+        return 0;
+    }
+    if (cJSON_IsString(e)) {
+        return cJSON_IsString(a) && strcmp(a->valuestring, e->valuestring) == 0;
+    }
+    if (cJSON_IsNumber(e)) {
+        return cJSON_IsNumber(a) && a->valuedouble == e->valuedouble;
+    }
+    if (cJSON_IsBool(e)) {
+        return cJSON_IsBool(a) && a->valueint == e->valueint;
+    }
+    if (cJSON_IsNull(e)) {
+        return cJSON_IsNull(a);
+    }
+    return 0;
 }
 
-/* ==================== 工具 ==================== */
-
-static void value_to_text(const cJSON *node, char *buf, size_t sz)
+/** 递归部分匹配：expected 中写出的成员必须都在 actual 中匹配 */
+static int deep_match(const cJSON *actual, const cJSON *expected)
 {
-    if (node == NULL) {
-        snprintf(buf, sz, "<不存在>");
-    } else if (cJSON_IsString(node)) {
-        snprintf(buf, sz, "\"%s\"", node->valuestring);
-    } else if (cJSON_IsNumber(node)) {
-        double d = node->valuedouble;
-        if (d == (double)(long long)d) {
-            snprintf(buf, sz, "%" PRId64, (int64_t)d);
-        } else {
-            snprintf(buf, sz, "%g", d);
+    cJSON *child;
+    int i;
+    int n;
+
+    if (expected == NULL) {
+        return 1;
+    }
+    if (actual == NULL) {
+        return 0;
+    }
+
+    if (cJSON_IsObject(expected)) {
+        if (!cJSON_IsObject(actual)) {
+            return 0;
         }
-    } else if (cJSON_IsTrue(node)) {
-        snprintf(buf, sz, "true");
-    } else if (cJSON_IsFalse(node)) {
-        snprintf(buf, sz, "false");
-    } else if (cJSON_IsNull(node)) {
-        snprintf(buf, sz, "null");
-    } else if (cJSON_IsArray(node)) {
-        snprintf(buf, sz, "<数组>");
-    } else {
-        snprintf(buf, sz, "<对象>");
-    }
-}
-
-/** 数组主键映射（规范 11）：数组名 -> 匹配主键 */
-static const char *match_key_for(const char *key)
-{
-    static const char *const KEYS[][2] = {
-        { "players",         "id" },
-        { "properties",      "position" },
-        { "map_items",       "position" },
-        { "display_players", "position" },
-    };
-    for (size_t i = 0; i < sizeof(KEYS) / sizeof(KEYS[0]); i++) {
-        if (strcmp(key, KEYS[i][0]) == 0) {
-            return KEYS[i][1];
-        }
-    }
-    return NULL;
-}
-
-/** 标量完全相等（规范 11：标量 → 完全相等） */
-static bool scalar_equal(const cJSON *e, const cJSON *a)
-{
-    if (e == NULL || a == NULL) return false;
-    if (cJSON_IsString(e) && cJSON_IsString(a)) {
-        return strcmp(e->valuestring, a->valuestring) == 0;
-    }
-    if (cJSON_IsNumber(e) && cJSON_IsNumber(a)) {
-        return e->valuedouble == a->valuedouble;
-    }
-    if (cJSON_IsBool(e) && cJSON_IsBool(a)) {
-        return cJSON_IsTrue(e) == cJSON_IsTrue(a);
-    }
-    if (cJSON_IsNull(e) && cJSON_IsNull(a)) {
-        return true;
-    }
-    return false;   /* 类型不同 */
-}
-
-static int fail(MatchError *err, int code, const char *path,
-                const cJSON *exp, const cJSON *act, const char *fmt)
-{
-    err->code = code;
-    snprintf(err->path, sizeof(err->path), "%s", path);
-    value_to_text(exp, err->expected, sizeof(err->expected));
-    value_to_text(act, err->actual, sizeof(err->actual));
-    snprintf(err->message, sizeof(err->message), "%s", fmt);
-    return code;
-}
-
-/* ==================== 递归匹配 ==================== */
-
-static int match_node(const cJSON *exp, const cJSON *act, const char *path, MatchError *err);
-static int match_object_in(const cJSON *exp, const cJSON *act, const char *base_path, MatchError *err);
-
-/** 在 Actual 数组中按主键查找与 exp 项主键相同的元素 */
-static cJSON *find_by_key(const cJSON *arr, const char *pk, const cJSON *exp_item)
-{
-    const cJSON *exp_key = cJSON_GetObjectItemCaseSensitive(exp_item, pk);
-    if (exp_key == NULL || !cJSON_IsArray(arr)) {
-        return NULL;
-    }
-    cJSON *item = NULL;
-    cJSON_ArrayForEach(item, arr) {
-        const cJSON *act_key = cJSON_GetObjectItemCaseSensitive(item, pk);
-        if (scalar_equal(exp_key, act_key)) {
-            return item;
-        }
-    }
-    return NULL;
-}
-
-static int match_array(const char *key, const cJSON *exp, const cJSON *act,
-                       const char *base_path, MatchError *err)
-{
-    const char *pk = match_key_for(key);
-    char path[MATCH_PATH_MAX];
-
-    cJSON *exp_item = NULL;
-    cJSON_ArrayForEach(exp_item, exp) {
-        if (pk != NULL && cJSON_IsObject(exp_item)) {
-            /* 按主键匹配（规范 11：不按顺序、不比长度） */
-            cJSON *act_item = find_by_key(act, pk, exp_item);
-            const cJSON *exp_key = cJSON_GetObjectItemCaseSensitive(exp_item, pk);
-            char keytext[MATCH_VALUE_MAX];
-            value_to_text(exp_key, keytext, sizeof(keytext));
-            if (act_item == NULL) {
-                snprintf(path, sizeof(path), "%s.%s[%s=%s]", base_path, key, pk, keytext);
-                return fail(err, RC_ASSERT_NOT_FOUND, path, exp_item, NULL,
-                            "Expected 要求的主键记录不存在");
-            }
-            snprintf(path, sizeof(path), "%s.%s[%s=%s]", base_path, key, pk, keytext);
-            int rc = match_object_in(exp_item, act_item, path, err);
-            if (rc != RC_OK) {
-                return rc;
-            }
-        } else {
-            /* 无主键数组：按位置顺次比较（规范未覆盖，防御性实现） */
-            int i = 0;
-            cJSON *node = exp_item;
-            snprintf(path, sizeof(path), "%s.%s[%d]", base_path, key, i);
-            int rc = match_node(node, cJSON_GetArrayItem(act, i), path, err);
-            if (rc != RC_OK) {
-                return rc;
+        cJSON_ArrayForEach(child, expected) {
+            cJSON *av = cJSON_GetObjectItem(actual, child->string);
+            if (!deep_match(av, child)) {
+                return 0;
             }
         }
+        return 1;
     }
-    return RC_OK;
+
+    if (cJSON_IsArray(expected)) {
+        if (!cJSON_IsArray(actual)) {
+            return 0;
+        }
+        n = cJSON_GetArraySize(expected);
+        if (cJSON_GetArraySize(actual) < n) {
+            return 0;
+        }
+        for (i = 0; i < n; ++i) {
+            if (!deep_match(cJSON_GetArrayItem(actual, i), cJSON_GetArrayItem(expected, i))) {
+                return 0;
+            }
+        }
+        return 1;
+    }
+
+    return scalar_equal(actual, expected);
 }
 
-static int match_node(const cJSON *exp, const cJSON *act, const char *path, MatchError *err)
+/** 按主键匹配列表：expected 每个元素都要在 actual 中找到同主键且匹配 */
+static int match_list_by_key(const cJSON *actual, const cJSON *expected, const char *key)
 {
-    if (cJSON_IsObject(exp)) {
-        if (!cJSON_IsObject(act)) {
-            return fail(err, RC_ASSERT_NOT_EQUAL, path, exp, act, "类型不匹配：期望对象");
-        }
-        return match_object_in(exp, act, path, err);
-    }
-    if (cJSON_IsArray(exp)) {
-        if (!cJSON_IsArray(act)) {
-            return fail(err, RC_ASSERT_NOT_EQUAL, path, exp, act, "类型不匹配：期望数组");
-        }
-        return match_array("", exp, act, path, err);
-    }
-    if (!scalar_equal(exp, act)) {
-        return fail(err, RC_ASSERT_NOT_EQUAL, path, exp, act, "标量不相等");
-    }
-    return RC_OK;
-}
+    int i;
+    int n;
 
-/** 递归部分匹配一个对象（规范 11：只比对 expected 里写出的键） */
-static int match_object_in(const cJSON *exp, const cJSON *act, const char *base_path, MatchError *err)
-{
-    cJSON *child = NULL;
-    cJSON_ArrayForEach(child, exp) {
-        const char *key = child->string;
-        char path[MATCH_PATH_MAX];
-        snprintf(path, sizeof(path), "%s.%s", base_path, key);
+    if (expected == NULL) {
+        return 1;
+    }
+    if (!cJSON_IsArray(expected) || actual == NULL || !cJSON_IsArray(actual)) {
+        return 0;
+    }
 
-        /* *_absent 断言：对应主键在 Actual 中不存在（规范 11） */
-        size_t klen = strlen(key);
-        if (klen > 7 && strcmp(key + klen - 7, "_absent") == 0) {
-            char arrname[64];
-            snprintf(arrname, sizeof(arrname), "%.*s", (int)(klen - 7), key);
-            const cJSON *act_arr = cJSON_GetObjectItemCaseSensitive(act, arrname);
-            const char *pk = match_key_for(arrname);
-            if (!cJSON_IsArray(child)) {
-                return fail(err, RC_ASSERT_NOT_EQUAL, path, child, NULL,
-                            "_absent 断言的值必须为数组");
-            }
-            if (pk != NULL) {
-                /* 断言数组中是裸主键值（如 properties_absent: [5]），
-                   在 Actual 数组中查找主键相同的记录 */
-                cJSON *pos_item = NULL;
-                cJSON_ArrayForEach(pos_item, child) {
-                    cJSON *hit = NULL;
-                    cJSON *ai = NULL;
-                    cJSON_ArrayForEach(ai, act_arr) {
-                        const cJSON *ak = cJSON_GetObjectItemCaseSensitive(ai, pk);
-                        if (scalar_equal(pos_item, ak)) {
-                            hit = ai;
-                            break;
-                        }
-                    }
-                    if (hit != NULL) {
-                        char keytext[MATCH_VALUE_MAX];
-                        value_to_text(pos_item, keytext, sizeof(keytext));
-                        snprintf(path, sizeof(path), "%s.%s[%s=%s]", base_path, arrname, pk, keytext);
-                        return fail(err, RC_ASSERT_NOT_ABSENT, path, pos_item, hit,
-                                    "应不存在的对象实际存在");
-                    }
-                }
-            }
+    n = cJSON_GetArraySize(expected);
+    for (i = 0; i < n; ++i) {
+        cJSON *e = cJSON_GetArrayItem(expected, i);
+        cJSON *e_key = cJSON_GetObjectItem(e, key);
+        int j;
+        int found = 0;
+
+        if (e_key == NULL) {
             continue;
         }
-
-        const cJSON *act_child = cJSON_GetObjectItemCaseSensitive(act, key);
-        if (act_child == NULL) {
-            return fail(err, RC_ASSERT_NOT_FOUND, path, child, NULL,
-                        "Actual 缺少该键");
+        for (j = 0; j < cJSON_GetArraySize(actual); ++j) {
+            cJSON *a = cJSON_GetArrayItem(actual, j);
+            cJSON *a_key = cJSON_GetObjectItem(a, key);
+            if (a_key != NULL && scalar_equal(a_key, e_key)) {
+                if (!deep_match(a, e)) {
+                    return 0;
+                }
+                found = 1;
+                break;
+            }
         }
-        int rc = match_node(child, act_child, path, err);
-        if (rc != RC_OK) {
-            return rc;
+        if (!found) {
+            return 0;
         }
     }
-    return RC_OK;
+    return 1;
 }
 
-int expected_check(const cJSON *expected, const cJSON *actual, MatchError *err)
+/** 检查 actual 列表中不存在 positions 里的任意主键值 */
+static int absent_by_key(const cJSON *actual, const cJSON *positions, const char *key)
 {
-    match_error_init(err);
-    if (!cJSON_IsObject(expected) || !cJSON_IsObject(actual)) {
-        return fail(err, RC_ASSERT_NOT_EQUAL, "actual", expected, actual,
-                    "expected/actual 必须为对象");
+    int i;
+    int n;
+
+    if (positions == NULL) {
+        return 1;
     }
-    /* 错误路径示例：actual.players[id=A].items.BOMB（规范 13） */
-    return match_object_in(expected, actual, "actual", err);
+    if (!cJSON_IsArray(positions)) {
+        return 0;
+    }
+    n = cJSON_GetArraySize(positions);
+    for (i = 0; i < n; ++i) {
+        cJSON *p = cJSON_GetArrayItem(positions, i);
+        int j;
+        for (j = 0; actual != NULL && j < cJSON_GetArraySize(actual); ++j) {
+            cJSON *a = cJSON_GetArrayItem(actual, j);
+            cJSON *a_key = cJSON_GetObjectItem(a, key);
+            if (a_key != NULL && scalar_equal(a_key, p)) {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+int expected_checker_compare(const cJSON *actual, const cJSON *expected)
+{
+    cJSON *child;
+
+    if (expected == NULL) {
+        return 0;
+    }
+    if (!cJSON_IsObject(expected)) {
+        return -RC_ASSERT_NOT_FOUND;
+    }
+    if (actual == NULL || !cJSON_IsObject(actual)) {
+        return -RC_ASSERT_NOT_FOUND;
+    }
+
+    cJSON_ArrayForEach(child, expected) {
+        const char *key = child->string;
+        cJSON *av = cJSON_GetObjectItem(actual, key);
+
+        if (strcmp(key, "players") == 0) {
+            if (!match_list_by_key(av, child, "id")) {
+                return -RC_ASSERT_NOT_EQUAL;
+            }
+        } else if (strcmp(key, "properties") == 0) {
+            if (!match_list_by_key(av, child, "position")) {
+                return -RC_ASSERT_NOT_EQUAL;
+            }
+        } else if (strcmp(key, "map_items") == 0) {
+            if (!match_list_by_key(av, child, "position")) {
+                return -RC_ASSERT_NOT_EQUAL;
+            }
+        } else if (strcmp(key, "display_players") == 0) {
+            if (!match_list_by_key(av, child, "position")) {
+                return -RC_ASSERT_NOT_EQUAL;
+            }
+        } else if (strcmp(key, "properties_absent") == 0) {
+            if (!absent_by_key(cJSON_GetObjectItem(actual, "properties"), child, "position")) {
+                return -RC_ASSERT_NOT_ABSENT;
+            }
+        } else if (strcmp(key, "map_items_absent") == 0) {
+            if (!absent_by_key(cJSON_GetObjectItem(actual, "map_items"), child, "position")) {
+                return -RC_ASSERT_NOT_ABSENT;
+            }
+        } else {
+            if (!deep_match(av, child)) {
+                return -RC_ASSERT_NOT_EQUAL;
+            }
+        }
+    }
+
+    return 0;
 }

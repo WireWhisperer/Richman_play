@@ -314,25 +314,17 @@ int manual_ui_run(Game *g)
     enable_ansi();
 
     int32_t initial_fund = prompt_initial_fund();
-    if (g->user_count <= 0) {
-        int setup_rc = game_start_manual(g, initial_fund);
-        if (setup_rc != RC_OK) {
-            fprintf(stderr, "游戏初始化失败: %s\n", game_last_error());
-            return setup_rc;
-        }
-    } else {
-        for (int32_t i = 0; i < g->user_count; ++i) {
-            g->players[i].fund = initial_fund;
-            g->players[i].credit = 0;
-            g->players[i].position = 0;
-            g->players[i].status = NORMAL;
-            g->players[i].remaining_rounds = 0;
-        }
-        g->current_index = 0;
-        g->phase = PHASE_COMMAND;
-        g->status = GAME_RUNNING;
-        g->prompt = PROMPT_NONE;
+    for (int32_t i = 0; i < g->user_count; ++i) {
+        g->players[i].fund = initial_fund;
+        g->players[i].credit = 0;
+        g->players[i].position = 0;
+        g->players[i].status = NORMAL;
+        g->players[i].remaining_rounds = 0;
     }
+    g->current_index = 0;
+    g->phase = PHASE_COMMAND;
+    g->status = GAME_RUNNING;
+    g->prompt = PROMPT_NONE;
     printf("初始资金已设为 %d。\n", initial_fund);
 
     char line[256];

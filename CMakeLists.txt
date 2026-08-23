@@ -27,7 +27,7 @@ add_library(richman_core
     src/test_runner.c
     src/manual_ui.c
     src/player_setup.c
-    src/game_toolShop.c
+    src/buy_land.c
     third_party/cJSON/cJSON.c
 )
 target_include_directories(richman_core PUBLIC
