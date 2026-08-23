@@ -189,23 +189,53 @@ static bool parse_int_arg(const char *s, int32_t *out)
     return true;
 }
 
-/** 启动时提示输入初始资金：空行使用默认值，越界则重新输入 */
-static int32_t prompt_initial_fund(void)
+static int is_quit_command(const char *text)
+{
+    char cmd[16];
+    size_t i = 0;
+    size_t j = 0;
+
+    if (text == NULL) {
+        return 0;
+    }
+
+    while (text[i] == ' ' || text[i] == '\t') {
+        ++i;
+    }
+    while (text[i] != '\0' && text[i] != ' ' && text[i] != '\t' && j < sizeof(cmd) - 1) {
+        cmd[j++] = (char)toupper((unsigned char)text[i++]);
+    }
+    cmd[j] = '\0';
+    return strcmp(cmd, "QUIT") == 0;
+}
+
+/** 启动时提示输入初始资金：空行使用默认值，越界则重新输入；QUIT 退出。返回 1 表示退出。 */
+static int prompt_initial_fund(Game *g, int32_t *initial_fund)
 {
     char line[256];
 
+    if (g == NULL || initial_fund == NULL) {
+        return 0;
+    }
+
     for (;;) {
-        printf("请输入初始资金（%d~%d，直接回车默认 %d）：",
+        printf("请输入初始资金（%d~%d，直接回车默认 %d，输入 QUIT 退出）：",
                MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX, MANUAL_INITIAL_FUND_DEFAULT);
         fflush(stdout);
 
         if (fgets(line, sizeof(line), stdin) == NULL) {
-            return MANUAL_INITIAL_FUND_DEFAULT;
+            *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
+            return 0;
         }
 
         char *s = trim(line);
+        if (is_quit_command(s)) {
+            game_quit(g);
+            return 1;
+        }
         if (*s == '\0') {
-            return MANUAL_INITIAL_FUND_DEFAULT;
+            *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
+            return 0;
         }
 
         int32_t fund = 0;
@@ -215,7 +245,8 @@ static int32_t prompt_initial_fund(void)
                    MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX);
             continue;
         }
-        return fund;
+        *initial_fund = fund;
+        return 0;
     }
 }
 
@@ -311,9 +342,13 @@ static void print_command_prompt(const Game *g)
 
 int manual_ui_run(Game *g)
 {
+    int32_t initial_fund;
+
     console_init();
 
-    int32_t initial_fund = prompt_initial_fund();
+    if (prompt_initial_fund(g, &initial_fund)) {
+        return RC_OK;
+    }
     int setup_rc = game_apply_initial_fund(g, initial_fund);
     if (setup_rc != RC_OK) {
         fprintf(stderr, "游戏初始化失败: %s\n", game_last_error());

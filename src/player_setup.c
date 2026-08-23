@@ -103,6 +103,28 @@ static int trim_choices(char *text)
     return (int)write_index;
 }
 
+static int is_quit_command(const char *text)
+{
+    char cmd[16];
+    size_t index = 0;
+    size_t length = 0;
+
+    if (text == NULL) {
+        return 0;
+    }
+
+    while (text[index] == ' ' || text[index] == '\t') {
+        ++index;
+    }
+
+    while (text[index] != '\0' && text[index] != ' ' && text[index] != '\t' &&
+           length + 1U < sizeof(cmd)) {
+        cmd[length++] = (char)toupper((unsigned char)text[index++]);
+    }
+    cmd[length] = '\0';
+    return strcmp(cmd, "QUIT") == 0;
+}
+
 static const char *status_message(PlayerSetupStatus status)
 {
     switch (status) {
@@ -144,6 +166,8 @@ const char *player_setup_status_name(PlayerSetupStatus status)
             return "DUPLICATE_CHARACTER";
         case PLAYER_SETUP_IO_ERROR:
             return "IO_ERROR";
+        case PLAYER_SETUP_QUIT:
+            return "QUIT";
         default:
             return "UNKNOWN";
     }
@@ -255,7 +279,7 @@ PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
 
         if (!write_prompt(
                 output,
-                "请输入玩家及角色编号（2-4 位，如 21 表示阿土伯+钱夫人）：")) {
+                "请输入玩家及角色编号（2-4 位，如 21 表示阿土伯+钱夫人，输入 QUIT 退出）：")) {
             return PLAYER_SETUP_IO_ERROR;
         }
 
@@ -271,6 +295,11 @@ PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
         }
 
         (void)trim_choices(buffer);
+        if (is_quit_command(buffer)) {
+            game_quit(game);
+            return PLAYER_SETUP_QUIT;
+        }
+
         status = player_setup_apply_sequence(game, buffer);
         if (status == PLAYER_SETUP_OK) {
             return player_setup_print_summary(game, output);

@@ -74,6 +74,10 @@ int main(void)
     console_init();
     game_init(&game);
     status = player_setup_run(&game, stdin, stdout);
+    if (status == PLAYER_SETUP_QUIT) {
+        console_pause_before_exit();
+        return 0;
+    }
     if (status != PLAYER_SETUP_OK) {
         (void)fprintf(
             stderr,
