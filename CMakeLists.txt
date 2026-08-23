@@ -4,6 +4,7 @@ project(rich_demo LANGUAGES C)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 function(richman_enable_warnings target_name)
     if(MSVC)
@@ -19,6 +20,20 @@ function(richman_enable_warnings target_name)
     endif()
 endfunction()
 
+# cJSON：规范 v1.1 建议的 C JSON 库
+include(FetchContent)
+set(ENABLE_CJSON_TEST OFF CACHE BOOL "" FORCE)
+set(ENABLE_CJSON_UTILS OFF CACHE BOOL "" FORCE)
+set(ENABLE_CJSON_INSTALL OFF CACHE BOOL "" FORCE)
+set(CJSON_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+# 关闭 cJSON 的自定义编译标志（含 /Za，与 /std:c17 冲突）
+set(ENABLE_CUSTOM_COMPILER_FLAGS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(cJSON
+    GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
+    GIT_TAG v1.7.18
+)
+FetchContent_MakeAvailable(cJSON)
+
 add_library(richman_core
     src/game.c
     src/file_utils.c
@@ -33,7 +48,9 @@ add_library(richman_core
 
 target_include_directories(richman_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${cJSON_SOURCE_DIR}
 )
+target_link_libraries(richman_core PUBLIC cjson)
 richman_enable_warnings(richman_core)
 
 add_executable(rich_demo src/main.c)
