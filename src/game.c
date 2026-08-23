@@ -44,3 +44,33 @@ void game_reset(Game *game)
 {
     game_init(game);
 }
+
+void game_settle_landing(Game *g)
+{
+    int32_t position;
+
+    if (g == NULL || g->current_index < 0 ||
+        g->current_index >= g->user_count ||
+        g->current_index >= MAX_PLAYERS) {
+        return;
+    }
+
+    position = g->players[g->current_index].position;
+    if (position < 0 || position >= MAP_SIZE) {
+        return;
+    }
+
+    switch (g->cells[position].type) {
+    case CELL_MINE:
+        g->players[g->current_index].credit += g->cells[position].mine_points;
+        break;
+
+    case CELL_JAIL:
+        g->players[g->current_index].status = IMPRISONED;
+        g->players[g->current_index].remaining_rounds = JAIL_ROUNDS;
+        break;
+
+    default:
+        break;
+    }
+}
