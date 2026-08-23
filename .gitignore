@@ -1,4 +1,5 @@
 build/
+CMakeUserPresets.json
 build-*/
 *.exe
 *.obj
