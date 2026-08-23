@@ -15,6 +15,8 @@
  */
 #include "manual_ui.h"
 
+#include "console.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
@@ -22,18 +24,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004   /* Win10 SDK 值，老 SDK 未定义 */
-#endif
-#endif
-
 /* ==================== 终端颜色 ==================== */
 
 enum { COL_DEF, COL_RED, COL_GREEN, COL_BLUE, COL_YELLOW };
 
-/** 角色颜色（规范 3.1：Q 红 / A 绿 / S 蓝 / J 黄） */
 static int player_color(char id)
 {
     switch (id) {
@@ -54,25 +48,6 @@ static const char *ansi_of(int color)
     case COL_YELLOW: return "\033[33m";
     default:         return "\033[0m";
     }
-}
-
-/** Windows 控制台：打开 ANSI 虚拟终端模式，并切换为 UTF-8 代码页避免中文乱码 */
-static void enable_ansi(void)
-{
-#ifdef _WIN32
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (h == INVALID_HANDLE_VALUE) {
-        return;
-    }
-    DWORD mode = 0;
-    if (GetConsoleMode(h, &mode)) {
-        SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-    }
-#else
-    /* POSIX 终端原生支持 ANSI，无需处理 */
-#endif
 }
 
 /* ==================== 地图渲染 ==================== */
@@ -311,7 +286,7 @@ static int dispatch(Game *g, const char *s)
 
 int manual_ui_run(Game *g)
 {
-    enable_ansi();
+    console_init();
 
     int32_t initial_fund = prompt_initial_fund();
     int setup_rc = game_apply_initial_fund(g, initial_fund);

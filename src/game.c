@@ -312,14 +312,26 @@ int game_load_map(Game *g, const char *map_file)
             cJSON_Delete(root);
             return RC_INVALID_MAP;
         }
-        /* 数值字段可选；缺省时按规范 3.3 的地块类型表补默认值 */
+        /* 数值字段可选；缺省视为 0，再按地块类型补默认值 */
         const cJSON *p = cJSON_GetObjectItemCaseSensitive(cell, "price");
         const cJSON *u = cJSON_GetObjectItemCaseSensitive(cell, "upgrade_cost");
         const cJSON *m = cJSON_GetObjectItemCaseSensitive(cell, "mine_points");
-        int32_t price = 0, upg = 0, mine = 0;
-        if (!fu_json_get_uint32(p, &price) || !fu_json_get_uint32(u, &upg) ||
-            !fu_json_get_uint32(m, &mine)) {
-            set_error("地图 position %d 的数值字段非法（需为非负 int32）", (int)pos);
+        int32_t price = 0;
+        int32_t upg = 0;
+        int32_t mine = 0;
+
+        if (p != NULL && !fu_json_get_uint32(p, &price)) {
+            set_error("地图 position %d 的 price 非法（需为非负 int32）", (int)pos);
+            cJSON_Delete(root);
+            return RC_INVALID_MAP;
+        }
+        if (u != NULL && !fu_json_get_uint32(u, &upg)) {
+            set_error("地图 position %d 的 upgrade_cost 非法（需为非负 int32）", (int)pos);
+            cJSON_Delete(root);
+            return RC_INVALID_MAP;
+        }
+        if (m != NULL && !fu_json_get_uint32(m, &mine)) {
+            set_error("地图 position %d 的 mine_points 非法（需为非负 int32）", (int)pos);
             cJSON_Delete(root);
             return RC_INVALID_MAP;
         }
