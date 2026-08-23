@@ -1,0 +1,207 @@
+{
+  "schema_version": "1.0",
+  "user_story": "US07",
+  "tests": [
+    {
+      "case_id": "TC-US07-001",
+      "case_name": "ROLL使用预置骰子点数移动",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 0, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": [3]
+      },
+      "actions": [
+        {"command": "ROLL"}
+      ],
+      "expected": {
+        "players": [{"id": "A", "position": 3}]
+      }
+    },
+    {
+      "case_id": "TC-US07-002",
+      "case_name": "骰子点数6移动6格",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 0, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": [6]
+      },
+      "actions": [
+        {"command": "ROLL"}
+      ],
+      "expected": {
+        "players": [{"id": "A", "position": 6}]
+      }
+    },
+    {
+      "case_id": "TC-US07-003",
+      "case_name": "骰子序列不足返回DICE_SEQUENCE_EMPTY",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 0, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "ROLL"}
+      ],
+      "expected": {},
+      "expected_result": "ERROR",
+      "expected_error_code": "DICE_SEQUENCE_EMPTY"
+    },
+    {
+      "case_id": "TC-US07-004",
+      "case_name": "移动跨过69环绕到起点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 69, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "position": 0}]
+      }
+    },
+    {
+      "case_id": "TC-US07-005",
+      "case_name": "移动跨过69多步环绕",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 68, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 3}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "position": 1}]
+      }
+    },
+    {
+      "case_id": "TC-US07-006",
+      "case_name": "显示各玩家当前位置",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 5, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "QUERY"}
+      ],
+      "expected": {
+        "display_players": [
+          {"position": 5, "visible_user": "A"},
+          {"position": 20, "visible_user": "Q"}
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US07-007",
+      "case_name": "重叠位置显示当前玩家",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "Q",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 5, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 5, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "QUERY"}
+      ],
+      "expected": {
+        "display_players": [
+          {"position": 5, "visible_user": "Q"}
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US07-008",
+      "case_name": "移动后位置标记更新",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 3, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 2}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "position": 5}],
+        "display_players": [
+          {"position": 5, "visible_user": "A"},
+          {"position": 20, "visible_user": "Q"}
+        ]
+      }
+    }
+  ]
+}

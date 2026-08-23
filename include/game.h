@@ -29,6 +29,9 @@ struct cJSON;
 #define MAX_DICE_SEQ      1024    /* 预置骰子序列上限 */
 #define MAX_BOARD_ITEMS    100    /* 地图道具/地产动态数组容量上限 */
 #define HOSPITAL_POS        14    /*医院位置*/
+#define JAIL_POS            49    /*监狱位置*/
+#define TOOL_POS            28    /*道具屋位置*/
+#define GIFT_POS            35    /*礼品屋位置*/
 
 /* ===== 统一错误码（规范 13） ===== */
 typedef enum {
@@ -178,6 +181,7 @@ const char *prompt_to_str(PromptType p);
 int32_t property_total_invest(const Game *g, const Property *p); /* 购买价格 + level x 升级费用 */
 int32_t property_rent(const Game *g, const Property *p);         /* 投资总成本 / 2 */
 int32_t property_sell_price(const Game *g, const Property *p);   /* 投资总成本 x 2 */
+void get_rent(Game *g, Property p);
 
 /* ===== 查询 ===== */
 PLAYER *game_current_player(Game *g);
