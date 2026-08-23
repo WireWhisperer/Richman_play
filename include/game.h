@@ -1,7 +1,3 @@
-#ifndef GAME_H
-#define GAME_H
-
-#endif /* GAME_H */
 /**
  * @file game.h
  * @brief 大富翁游戏核心状态与规则 —— 规范 v1.1 第 3/4/5/9 节
@@ -15,6 +11,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+
+struct cJSON;
 
 /* ===== 基础常量（规范 3.x / 4.x） ===== */
 #define MAP_SIZE            70    /* 地图合法编号 0~69，69 的下一格为 0 */

@@ -1,0 +1,14 @@
+build/
+build-*/
+*.exe
+*.obj
+*.o
+*.pdb
+.vs/
+.vscode/
+.idea/
+CMakeFiles/
+CMakeCache.txt
+CTestTestfile.cmake
+Testing/
+cmake_install.cmake
