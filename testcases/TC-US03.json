@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0",
+  "user_story": "US03",
+  "tests": [
+    {
+      "case_id": "TC-US03-001",
+      "case_name": "两名玩家正确初始化并轮转",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 13, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "current_user": "Q"
+      }
+    },
+    {
+      "case_id": "TC-US03-002",
+      "case_name": "四名玩家正确初始化",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q", "S", "J"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 13, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "S", "fund": 1000, "credit": 0, "position": 30, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "J", "fund": 1000, "credit": 0, "position": 40, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "current_user": "Q",
+        "players": [
+          {"id": "A"},
+          {"id": "Q"},
+          {"id": "S"},
+          {"id": "J"}
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US03-003",
+      "case_name": "回合按users顺序轮转",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q", "S"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 13, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 13, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "S", "fund": 1000, "credit": 0, "position": 13, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}},
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "current_user": "S"
+      }
+    },
+    {
+      "case_id": "TC-US03-004",
+      "case_name": "重复角色返回INVALID_PRESET",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "A"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 0, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "A", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [],
+      "expected": {},
+      "expected_result": "ERROR",
+      "expected_error_code": "INVALID_PRESET"
+    }
+  ]
+}
