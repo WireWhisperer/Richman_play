@@ -25,13 +25,12 @@ struct cJSON;
 #define ROBOT_CLEAR_RANGE   10    /* 机器娃娃清除前方 1~10 格 */
 #define DICE_MIN             1
 #define DICE_MAX             6
+#define MANUAL_INITIAL_FUND_DEFAULT 10000
+#define MANUAL_INITIAL_FUND_MIN      1000
+#define MANUAL_INITIAL_FUND_MAX     50000
 #define USER_ID_MAX         16    /* 玩家标识字符串上限 */
 #define MAX_DICE_SEQ      1024    /* 预置骰子序列上限 */
 #define MAX_BOARD_ITEMS    100    /* 地图道具/地产动态数组容量上限 */
-#define HOSPITAL_POS        14    /*医院位置*/
-#define JAIL_POS            49    /*监狱位置*/
-#define TOOL_POS            28    /*道具屋位置*/
-#define GIFT_POS            35    /*礼品屋位置*/
 
 /* ===== 统一错误码（规范 13） ===== */
 typedef enum {
@@ -161,6 +160,7 @@ typedef struct {
 
 /* ===== 生命周期（规范 7.1 / 14 步骤 3~4） ===== */
 void game_init(Game *g);                                /* 初始化为空状态 */
+int  game_start_manual(Game *g, int32_t initial_fund); /* 手动对局开局：四名玩家同额初始资金 */
 int  game_load_map(Game *g, const char *map_file);      /* 读取 map.json，0 成功，否则 RC_INVALID_MAP */
 void game_reset(Game *g);                               /* 完整重置：执行每个测试前必须调用 */
 int  game_apply_preset(Game *g, const struct cJSON *preset);   /* 加载 Preset，0 成功 */
@@ -181,7 +181,6 @@ const char *prompt_to_str(PromptType p);
 int32_t property_total_invest(const Game *g, const Property *p); /* 购买价格 + level x 升级费用 */
 int32_t property_rent(const Game *g, const Property *p);         /* 投资总成本 / 2 */
 int32_t property_sell_price(const Game *g, const Property *p);   /* 投资总成本 x 2 */
-void get_rent(Game *g, Property p);
 
 /* ===== 查询 ===== */
 PLAYER *game_current_player(Game *g);
@@ -205,13 +204,22 @@ int game_query(const Game *g, char *buf, size_t bufsz); /* QUERY：查询当前�
 int game_help(char *buf, size_t bufsz);                 /* HELP：命令帮助文本 */
 int game_quit(Game *g);                                 /* QUIT：强制结束游戏 */
 
+/* ===== 道具屋 ===== */
+int tool_shop_show_catalog(char *buf, size_t bufsz);
+int tool_shop_view_inventory(const Game *g, char *buf, size_t bufsz);
+int tool_shop_enter(Game *g, char *message, size_t message_size);
+int tool_shop_leave(Game *g, char *message, size_t message_size);
+int tool_shop_answer(Game *g, const char *input,
+                     char *message, size_t message_size);
+int tool_shop_buy(Game *g, int32_t choice,
+                  char *message, size_t message_size);
+int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
+                       char *message, size_t message_size);
 
 /* ===== 内部流程（规范 4 回合和游戏流程） ===== */
-int game_move_to(Game *g, int32_t steps, int8_t last_position); /* 逐格移动+途中道具触发，返回最终落点 */
-void game_settle_landing(Game *g);    /* 落点处理（规范 9） */
+int  game_move_to(Game *g, int32_t steps);      /* 逐格移动+途中道具触发，返回最终落点 */
+void game_settle_landing(Game *g, int32_t position);    /* 落点处理（规范 9） */
 void game_next_turn(Game *g);                   /* 回合切换与轮空（规范 4.3） */
 void game_check_finish(Game *g);                /* 破产/结束判定 */
-void game_boarditem_suc(Game *g, BoardItem *b, int8_t index);               /*道具生效判定*/
-void game_remove_board_item(Game *g, int index);                            /*清除道具*/
 
 #endif /* RICH_GAME_H */
