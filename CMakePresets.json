@@ -2,21 +2,21 @@
   "version": 6,
   "configurePresets": [
     {
-      "name": "windows-mingw",
-      "displayName": "Windows MinGW",
-      "description": "Use MinGW gcc on Windows (no Visual Studio required)",
-      "generator": "MinGW Makefiles",
+      "name": "windows-vs",
+      "displayName": "Windows Visual Studio",
+      "description": "Use Visual Studio 2022 generator (recommended on Windows)",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
         "BUILD_TESTING": "ON"
       }
     },
     {
-      "name": "windows-msvc",
-      "displayName": "Windows MSVC",
-      "description": "Use Visual Studio nmake generator",
-      "generator": "NMake Makefiles",
+      "name": "windows-mingw",
+      "displayName": "Windows MinGW",
+      "description": "Use MinGW gcc on Windows",
+      "generator": "MinGW Makefiles",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -26,15 +26,24 @@
   ],
   "buildPresets": [
     {
-      "name": "windows-mingw",
-      "configurePreset": "windows-mingw"
+      "name": "windows-vs-debug",
+      "configurePreset": "windows-vs",
+      "configuration": "Debug"
     },
     {
-      "name": "windows-msvc",
-      "configurePreset": "windows-msvc"
+      "name": "windows-mingw",
+      "configurePreset": "windows-mingw"
     }
   ],
   "testPresets": [
+    {
+      "name": "windows-vs-debug",
+      "configurePreset": "windows-vs",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
     {
       "name": "windows-mingw",
       "configurePreset": "windows-mingw",
