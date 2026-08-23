@@ -16,6 +16,7 @@
 #include "manual_ui.h"
 
 #include "console.h"
+#include "player_setup.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -282,6 +283,30 @@ static int dispatch(Game *g, const char *s)
     return RC_INVALID_COMMAND;
 }
 
+static void print_command_prompt(const Game *g)
+{
+    const PLAYER *player = game_current_player_c(g);
+    const PlayerSetupCharacter *character;
+
+    if (player == NULL) {
+        (void)printf("> ");
+        return;
+    }
+
+    character = player_setup_character_by_id(player->id);
+    if (character == NULL) {
+        (void)printf("%c> ", player->id);
+        return;
+    }
+
+    (void)printf(
+        "%s%s%s> ",
+        ansi_of(player_color(player->id)),
+        character->name,
+        ansi_of(COL_DEF)
+    );
+}
+
 /* ==================== 主循环 ==================== */
 
 int manual_ui_run(Game *g)
@@ -299,7 +324,7 @@ int manual_ui_run(Game *g)
     char line[256];
     for (;;) {
         render_map(g);
-        printf("%s> ", (g->phase == PHASE_PROMPT) ? "ANSWER" : "");
+        print_command_prompt(g);
         fflush(stdout);
 
         if (fgets(line, sizeof(line), stdin) == NULL) {

@@ -126,6 +126,11 @@ const PlayerSetupCharacter *player_setup_character(int selection)
     return &CHARACTERS[selection - 1];
 }
 
+const PlayerSetupCharacter *player_setup_character_by_id(char id)
+{
+    return character_by_id(id);
+}
+
 const char *player_setup_status_name(PlayerSetupStatus status)
 {
     switch (status) {

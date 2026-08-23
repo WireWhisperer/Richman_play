@@ -30,6 +30,9 @@ typedef struct {
 /** Returns immutable character metadata for selection 1-4, or NULL. */
 const PlayerSetupCharacter *player_setup_character(int selection);
 
+/** Returns character metadata for role id Q/A/S/J, or NULL. */
+const PlayerSetupCharacter *player_setup_character_by_id(char id);
+
 /** Returns a stable English name for a setup status. */
 const char *player_setup_status_name(PlayerSetupStatus status);
 
