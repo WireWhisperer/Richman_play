@@ -1,8 +1,9 @@
 #include "game.h"
 
-int game_move_to(Game *g, int32_t steps, int8_t last_position) /* 逐格移动+途中道具触发，返回最终落点 */
+int game_move_to(Game *g, int32_t steps, int32_t last_position) /* 逐格移动+途中道具触发，返回最终落点 */
 {
     int i;
+    (void)steps;
     for (i = 0; i <= MAX_BOARD_ITEMS; i++)
     {
         if(g->board_items[i].position < last_position)
@@ -39,6 +40,7 @@ void game_boarditem_suc(Game *g, BoardItem *b, int8_t index)   /*道具生效判
 void game_settle_landing(Game *g)  /* 落点处理（规范 9） */
 {
     int i;
+    printf("您已落在第%d格！\n", g->players[g->current_index].position);
     for (i = 0; i <= MAX_BOARD_ITEMS; i++)
     {
         if (g->players[g->current_index].position == g->properties[i].position)

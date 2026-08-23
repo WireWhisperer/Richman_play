@@ -8,7 +8,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 function(richman_enable_warnings target_name)
     if(MSVC)
         target_compile_definitions(${target_name} PRIVATE _CRT_SECURE_NO_WARNINGS)
-        target_compile_options(${target_name} PRIVATE /W4 /WX /utf-8)
+        target_compile_options(${target_name} PRIVATE /WX /utf-8)
     else()
         target_compile_options(${target_name} PRIVATE
             -Wall
@@ -21,13 +21,6 @@ endfunction()
 
 add_library(richman_core
     src/game.c
-    src/file_utils.c
-    src/case_loader.c
-    src/action_executor.c
-    src/actual_writer.c
-    src/expected_checker.c
-    src/test_runner.c
-    src/manual_ui.c
     src/player_setup.c
     src/usr_action.c
     src/usr_judge.c

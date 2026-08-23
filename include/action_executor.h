@@ -1,4 +1,0 @@
-#ifndef ACTION_EXECUTOR_H
-#define ACTION_EXECUTOR_H
-
-#endif /* ACTION_EXECUTOR_H */

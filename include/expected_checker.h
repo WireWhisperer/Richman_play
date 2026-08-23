@@ -1,4 +1,0 @@
-#ifndef EXPECTED_CHECKER_H
-#define EXPECTED_CHECKER_H
-
-#endif /* EXPECTED_CHECKER_H */
