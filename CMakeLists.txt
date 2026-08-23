@@ -44,6 +44,9 @@ add_library(richman_core
     src/test_runner.c
     src/manual_ui.c
     src/player_setup.c
+    src/usr_action.c
+    src/usr_judge.c
+    src/buy_land.c
 )
 
 target_include_directories(richman_core PUBLIC

@@ -11,6 +11,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
 
 struct cJSON;
 
@@ -183,6 +186,11 @@ int32_t property_rent(const Game *g, const Property *p);         /* 投资总成
 int32_t property_sell_price(const Game *g, const Property *p);   /* 投资总成本 x 2 */
 void get_rent(Game *g, Property p);
 
+int get_land_type(int position);
+int get_land_price(int land_type);
+int buy_land(Game *g);
+void ask_buy_land(Game *g);
+
 /* ===== 查询 ===== */
 PLAYER *game_current_player(Game *g);
 const PLAYER *game_current_player_c(const Game *g);
@@ -213,5 +221,6 @@ void game_next_turn(Game *g);                   /* 回合切换与轮空（规�
 void game_check_finish(Game *g);                /* 破产/结束判定 */
 void game_boarditem_suc(Game *g, BoardItem *b, int8_t index);               /*道具生效判定*/
 void game_remove_board_item(Game *g, int index);                            /*清除道具*/
+
 
 #endif /* RICH_GAME_H */
