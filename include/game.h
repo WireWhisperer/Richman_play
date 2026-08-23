@@ -28,6 +28,7 @@ struct cJSON;
 #define USER_ID_MAX         16    /* 玩家标识字符串上限 */
 #define MAX_DICE_SEQ      1024    /* 预置骰子序列上限 */
 #define MAX_BOARD_ITEMS    100    /* 地图道具/地产动态数组容量上限 */
+#define HOSPITAL_POS        14    /*医院位置*/
 
 /* ===== 统一错误码（规范 13） ===== */
 typedef enum {
@@ -200,10 +201,13 @@ int game_query(const Game *g, char *buf, size_t bufsz); /* QUERY：查询当前�
 int game_help(char *buf, size_t bufsz);                 /* HELP：命令帮助文本 */
 int game_quit(Game *g);                                 /* QUIT：强制结束游戏 */
 
+
 /* ===== 内部流程（规范 4 回合和游戏流程） ===== */
-int  game_move_to(Game *g, int32_t steps);      /* 逐格移动+途中道具触发，返回最终落点 */
-void game_settle_landing(Game *g, int32_t position);    /* 落点处理（规范 9） */
+int game_move_to(Game *g, int32_t steps, int8_t last_position); /* 逐格移动+途中道具触发，返回最终落点 */
+void game_settle_landing(Game *g);    /* 落点处理（规范 9） */
 void game_next_turn(Game *g);                   /* 回合切换与轮空（规范 4.3） */
 void game_check_finish(Game *g);                /* 破产/结束判定 */
+void game_boarditem_suc(Game *g, BoardItem *b, int8_t index);               /*道具生效判定*/
+void game_remove_board_item(Game *g, int index);                            /*清除道具*/
 
 #endif /* RICH_GAME_H */
