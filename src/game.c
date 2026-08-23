@@ -7,6 +7,11 @@
 
 #include <string.h>
 
+int tool_shop_enter(Game *g, char *message, size_t message_size);
+
+void handle_mine_landing(Game *g, int32_t position);
+void handle_jail_landing(Game *g);
+
 void game_init(Game *game)
 {
     int32_t index;
@@ -62,12 +67,15 @@ void game_settle_landing(Game *g)
 
     switch (g->cells[position].type) {
     case CELL_MINE:
-        g->players[g->current_index].credit += g->cells[position].mine_points;
+        handle_mine_landing(g, position);
         break;
 
     case CELL_JAIL:
-        g->players[g->current_index].status = IMPRISONED;
-        g->players[g->current_index].remaining_rounds = JAIL_ROUNDS;
+        handle_jail_landing(g);
+        break;
+
+    case CELL_TOOL_SHOP:
+        (void)tool_shop_enter(g, NULL, 0);
         break;
 
     default:
