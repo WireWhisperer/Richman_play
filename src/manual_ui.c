@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "player_setup.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
@@ -213,36 +215,6 @@ static bool parse_int_arg(const char *s, int32_t *out)
     return true;
 }
 
-/** 启动时提示输入初始资金：空行使用默认值，越界则重新输入 */
-static int32_t prompt_initial_fund(void)
-{
-    char line[256];
-
-    for (;;) {
-        printf("请输入初始资金（%d~%d，直接回车默认 %d）：",
-               MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX, MANUAL_INITIAL_FUND_DEFAULT);
-        fflush(stdout);
-
-        if (fgets(line, sizeof(line), stdin) == NULL) {
-            return MANUAL_INITIAL_FUND_DEFAULT;
-        }
-
-        char *s = trim(line);
-        if (*s == '\0') {
-            return MANUAL_INITIAL_FUND_DEFAULT;
-        }
-
-        int32_t fund = 0;
-        if (!parse_int_arg(s, &fund) ||
-            fund < MANUAL_INITIAL_FUND_MIN || fund > MANUAL_INITIAL_FUND_MAX) {
-            printf("输入无效，请输入 %d~%d 之间的整数。\n",
-                   MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX);
-            continue;
-        }
-        return fund;
-    }
-}
-
 /* ==================== 命令分发 ==================== */
 
 /** 返回 0 成功；负数 = ResultCode；1 = QUIT 请求退出 */
@@ -309,13 +281,44 @@ static int dispatch(Game *g, const char *s)
 
 /* ==================== 主循环 ==================== */
 
+int manual_ui_format_turn_prompt(
+    const Game *g,
+    char *buffer,
+    size_t buffer_size
+)
+{
+    const PLAYER *player;
+    const PlayerSetupCharacter *character;
+    int written;
+
+    if (g == NULL || buffer == NULL || buffer_size == 0U) {
+        return -RC_INVALID_PARAMS;
+    }
+    player = game_current_player_c(g);
+    if (player == NULL) {
+        return -RC_INVALID_PARAMS;
+    }
+    character = player_setup_character_by_id(player->id);
+    if (character == NULL) {
+        return -RC_INVALID_PARAMS;
+    }
+
+    written = snprintf(
+        buffer,
+        buffer_size,
+        g->phase == PHASE_PROMPT ? "%s(ANSWER)> " : "%s> ",
+        character->name
+    );
+    return written >= 0 && (size_t)written < buffer_size
+        ? RC_OK
+        : -RC_INVALID_PARAMS;
+}
+
 int manual_ui_run(Game *g)
 {
     enable_ansi();
 
-    int32_t initial_fund = prompt_initial_fund();
     for (int32_t i = 0; i < g->user_count; ++i) {
-        g->players[i].fund = initial_fund;
         g->players[i].credit = 0;
         g->players[i].position = 0;
         g->players[i].status = NORMAL;
@@ -325,12 +328,16 @@ int manual_ui_run(Game *g)
     g->phase = PHASE_COMMAND;
     g->status = GAME_RUNNING;
     g->prompt = PROMPT_NONE;
-    printf("初始资金已设为 %d。\n", initial_fund);
 
     char line[256];
     for (;;) {
+        char prompt[64];
+
         render_map(g);
-        printf("%s> ", (g->phase == PHASE_PROMPT) ? "ANSWER" : "");
+        if (manual_ui_format_turn_prompt(g, prompt, sizeof(prompt)) != RC_OK) {
+            (void)snprintf(prompt, sizeof(prompt), "玩家> ");
+        }
+        printf("%s", prompt);
         fflush(stdout);
 
         if (fgets(line, sizeof(line), stdin) == NULL) {

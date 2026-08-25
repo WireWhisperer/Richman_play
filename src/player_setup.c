@@ -25,7 +25,7 @@ static const PlayerSetupCharacter CHARACTERS[MAX_PLAYERS] = {
     {4, 'J', "金贝贝", "黄色"}
 };
 
-static const PlayerSetupCharacter *character_by_id(char id)
+const PlayerSetupCharacter *player_setup_character_by_id(char id)
 {
     int index;
 
@@ -92,19 +92,6 @@ static int parse_number(const char *text, long minimum, long maximum, int *value
 
     *value = (int)parsed;
     return 1;
-}
-
-static int choice_already_selected(const char *choices, int count, int choice)
-{
-    int index;
-
-    for (index = 0; index < count; ++index) {
-        if (choices[index] == (char)('0' + choice)) {
-            return 1;
-        }
-    }
-
-    return 0;
 }
 
 static int write_prompt(FILE *output, const char *prompt)
@@ -200,7 +187,7 @@ PlayerSetupStatus player_setup_print_summary(const Game *game, FILE *output)
     for (index = 0; index < game->user_count; ++index) {
         const PlayerSetupCharacter *character;
 
-        character = character_by_id(game->players[index].id);
+        character = player_setup_character_by_id(game->players[index].id);
         if (character == NULL) {
             return PLAYER_SETUP_INVALID_CHARACTER;
         }
@@ -223,9 +210,7 @@ PlayerSetupStatus player_setup_print_summary(const Game *game, FILE *output)
 PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
 {
     char buffer[PLAYER_SETUP_INPUT_SIZE];
-    char choices[MAX_PLAYERS + 1] = {0};
-    int player_count;
-    int player_index;
+    int initial_fund;
 
     if (game == NULL || input == NULL || output == NULL) {
         return PLAYER_SETUP_IO_ERROR;
@@ -234,7 +219,13 @@ PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
     for (;;) {
         LineReadStatus read_status;
 
-        if (!write_prompt(output, "请输入玩家数量（2-4）：")) {
+        if (fprintf(
+                output,
+                "请输入初始资金（%d-%d，直接回车默认 %d）：",
+                MANUAL_INITIAL_FUND_MIN,
+                MANUAL_INITIAL_FUND_MAX,
+                MANUAL_INITIAL_FUND_DEFAULT
+            ) < 0 || fflush(output) != 0) {
             return PLAYER_SETUP_IO_ERROR;
         }
 
@@ -242,13 +233,21 @@ PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
         if (read_status == LINE_READ_EOF) {
             return PLAYER_SETUP_IO_ERROR;
         }
-        if (read_status == LINE_READ_OK &&
-            parse_number(buffer, PLAYER_SETUP_MIN_PLAYERS,
-                         PLAYER_SETUP_MAX_PLAYERS, &player_count)) {
+        if (read_status == LINE_READ_OK && buffer[0] == '\0') {
+            initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
             break;
         }
-
-        if (fputs("玩家数量必须为 2 到 4，请重新输入。\n", output) < 0) {
+        if (read_status == LINE_READ_OK &&
+            parse_number(buffer, MANUAL_INITIAL_FUND_MIN,
+                         MANUAL_INITIAL_FUND_MAX, &initial_fund)) {
+            break;
+        }
+        if (fprintf(
+                output,
+                "初始资金必须为 %d 到 %d，请重新输入。\n",
+                MANUAL_INITIAL_FUND_MIN,
+                MANUAL_INITIAL_FUND_MAX
+            ) < 0) {
             return PLAYER_SETUP_IO_ERROR;
         }
     }
@@ -258,54 +257,51 @@ PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
             "1. 钱夫人（红色/Q）\n"
             "2. 阿土伯（绿色/A）\n"
             "3. 孙小美（蓝色/S）\n"
-            "4. 金贝贝（黄色/J）\n",
+            "4. 金贝贝（黄色/J）\n"
+            "请一次输入 2-4 个不重复的角色编号；输入顺序即游戏顺序。\n",
             output
         ) < 0) {
         return PLAYER_SETUP_IO_ERROR;
     }
 
-    for (player_index = 0; player_index < player_count; ++player_index) {
-        for (;;) {
-            LineReadStatus read_status;
-            int choice;
+    for (;;) {
+        LineReadStatus read_status;
+        PlayerSetupStatus status;
 
-            if (fprintf(
-                    output,
-                    "玩家 %d 请选择角色编号（1-4）：",
-                    player_index + 1
-                ) < 0 || fflush(output) != 0) {
-                return PLAYER_SETUP_IO_ERROR;
-            }
-
-            read_status = read_line(input, buffer, sizeof(buffer));
-            if (read_status == LINE_READ_EOF) {
-                return PLAYER_SETUP_IO_ERROR;
-            }
-            if (read_status != LINE_READ_OK ||
-                !parse_number(buffer, 1, MAX_PLAYERS, &choice)) {
-                if (fputs("角色编号错误，请重新输入。\n", output) < 0) {
-                    return PLAYER_SETUP_IO_ERROR;
-                }
-                continue;
-            }
-            if (choice_already_selected(choices, player_index, choice)) {
-                if (fputs("角色已选择，请重新选择。\n", output) < 0) {
-                    return PLAYER_SETUP_IO_ERROR;
-                }
-                continue;
-            }
-
-            choices[player_index] = (char)('0' + choice);
+        if (!write_prompt(
+                output,
+                "请输入角色编号序列（例如 123、24、321、21）："
+            )) {
+            return PLAYER_SETUP_IO_ERROR;
+        }
+        read_status = read_line(input, buffer, sizeof(buffer));
+        if (read_status == LINE_READ_EOF) {
+            return PLAYER_SETUP_IO_ERROR;
+        }
+        status = read_status == LINE_READ_OK
+            ? player_setup_apply_sequence(game, buffer)
+            : PLAYER_SETUP_INVALID_COUNT;
+        if (status == PLAYER_SETUP_OK) {
             break;
+        }
+        if (status == PLAYER_SETUP_INVALID_COUNT) {
+            if (fputs("请输入 2 到 4 个角色编号。\n", output) < 0) {
+                return PLAYER_SETUP_IO_ERROR;
+            }
+        } else if (status == PLAYER_SETUP_DUPLICATE_CHARACTER) {
+            if (fputs("角色不能重复选择，请重新输入。\n", output) < 0) {
+                return PLAYER_SETUP_IO_ERROR;
+            }
+        } else if (fputs("角色编号只能是 1 到 4，请重新输入。\n", output) < 0) {
+            return PLAYER_SETUP_IO_ERROR;
         }
     }
 
-    choices[player_count] = '\0';
-    {
-        PlayerSetupStatus status = player_setup_apply_sequence(game, choices);
-        if (status != PLAYER_SETUP_OK) {
-            return status;
-        }
+    for (int32_t index = 0; index < game->user_count; ++index) {
+        game->players[index].fund = initial_fund;
+    }
+    if (fprintf(output, "初始资金已设为 %d。\n", initial_fund) < 0) {
+        return PLAYER_SETUP_IO_ERROR;
     }
 
     return player_setup_print_summary(game, output);

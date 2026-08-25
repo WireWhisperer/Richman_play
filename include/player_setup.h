@@ -30,6 +30,9 @@ typedef struct {
 /** Returns immutable character metadata for selection 1-4, or NULL. */
 const PlayerSetupCharacter *player_setup_character(int selection);
 
+/** Returns immutable character metadata for Q/A/S/J, or NULL. */
+const PlayerSetupCharacter *player_setup_character_by_id(char id);
+
 /** Returns a stable English name for a setup status. */
 const char *player_setup_status_name(PlayerSetupStatus status);
 
@@ -43,7 +46,10 @@ PlayerSetupStatus player_setup_apply_sequence(Game *game, const char *choices);
 /** Prints the selected players in their game/turn order. */
 PlayerSetupStatus player_setup_print_summary(const Game *game, FILE *output);
 
-/** Runs the interactive US03 command-line setup flow. */
+/**
+ * Runs the interactive setup flow: initial fund first, then one compact
+ * character sequence. The sequence length determines the player count.
+ */
 PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output);
 
 #endif /* RICHMAN_PLAYER_SETUP_H */
