@@ -2,6 +2,7 @@
 # Usage:
 #   mingw32-make          # Windows MinGW
 #   make                  # Linux / macOS / MSYS2
+#   ./build.sh            # Linux / macOS shell script
 
 CC      ?= gcc
 CFLAGS  ?= -std=c17 -O2 -Wall -Wextra -Iinclude -Ithird_party/cJSON
@@ -32,8 +33,14 @@ SRCS = \
 OUT_DIR = dist
 ifeq ($(OS),Windows_NT)
   EXE = $(OUT_DIR)/rich_demo.exe
+  MKDIR = if not exist $(OUT_DIR) mkdir $(OUT_DIR)
+  CP_MAP = copy /Y spec\map.json dist\map.json
+  RM = del /Q
 else
   EXE = $(OUT_DIR)/rich_demo
+  MKDIR = mkdir -p $(OUT_DIR)
+  CP_MAP = cp -f spec/map.json $(OUT_DIR)/map.json
+  RM = rm -f
 endif
 
 .PHONY: all clean run
@@ -41,16 +48,16 @@ endif
 all: $(EXE) $(OUT_DIR)/map.json
 
 $(OUT_DIR):
-	mkdir "$(OUT_DIR)" 2>NUL || mkdir -p $(OUT_DIR)
+	$(MKDIR)
 
 $(EXE): $(SRCS) | $(OUT_DIR)
 	$(CC) $(CFLAGS) -o $@ $(SRCS) $(LDFLAGS)
 
 $(OUT_DIR)/map.json: spec/map.json | $(OUT_DIR)
-	cp spec/map.json $(OUT_DIR)/map.json 2>NUL || copy /Y spec\map.json dist\map.json
+	$(CP_MAP)
 
 run: all
 	./$(EXE)
 
 clean:
-	rm -f $(EXE) $(OUT_DIR)/map.json 2>NUL || del /Q dist\rich_demo.exe dist\map.json 2>NUL
+	-$(RM) $(EXE) $(OUT_DIR)/map.json

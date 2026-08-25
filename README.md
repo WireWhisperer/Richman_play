@@ -70,13 +70,19 @@ cmake --build build
 
 产物在 `build\dist\rich_demo.exe`。也可双击 `build-cmake.bat`。
 
-**Linux / macOS：**
+**Linux / macOS（仅需 gcc）：**
 
 ```bash
-make
-# 或
-cmake -S . -B build && cmake --build build
+git clone -b YZH git@github.com:WireWhisperer/Richman_play.git
+cd Richman_play
+chmod +x build.sh run-game.sh
+./build.sh          # 或: make
+./run-game.sh       # 或: ./dist/rich_demo
 ```
+
+若没有 gcc：`sudo apt install build-essential`（Debian/Ubuntu）。
+
+也可用 CMake：`cmake -S . -B build && cmake --build build`。
 
 ---
 
@@ -93,10 +99,11 @@ cmake -S . -B build && cmake --build build
 
 | 路径 | 说明 |
 |------|------|
-| `dist/rich_demo.exe` | **gcc / build.bat** 生成的可执行文件 |
+| `dist/rich_demo` / `dist/rich_demo.exe` | **gcc** 生成的可执行文件（Linux / Windows） |
 | `dist/map.json` | 游戏地图（编译时自动复制） |
 | `spec/map.json` | 地图源文件 |
-| `build.bat` | 仅 gcc 一键编译（无 CMake） |
-| `run-game.bat` | 一键运行 |
+| `build.bat` / `build.sh` | 仅 gcc 一键编译（Windows / Linux） |
+| `run-game.bat` / `run-game.sh` | 一键运行 |
 | `Makefile` | `mingw32-make` / `make` 编译 |
+| `sources.rsp` | gcc 源文件列表 |
 | `testcases/` | 自动化测试用例 |
