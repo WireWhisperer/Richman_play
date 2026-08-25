@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "player_setup.h"
 
@@ -235,6 +236,11 @@ static int dispatch(Game *g, const char *s)
     }
 
     if (strcmp(cmd, "ROLL") == 0) {
+        if (g->dice_next >= g->dice_count) {
+            int32_t rolled = (int32_t)(rand() % DICE_MAX) + DICE_MIN;
+            printf("掷骰子结果：%d\n", (int)rolled);
+            return game_step(g, rolled);
+        }
         return game_roll(g);
     }
     if (strcmp(cmd, "STEP") == 0) {
@@ -317,6 +323,7 @@ int manual_ui_format_turn_prompt(
 int manual_ui_run(Game *g)
 {
     enable_ansi();
+    srand((unsigned int)time(NULL));
 
     for (int32_t i = 0; i < g->user_count; ++i) {
         g->players[i].credit = 0;
