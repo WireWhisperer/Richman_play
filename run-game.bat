@@ -1,34 +1,26 @@
 @echo off
 cd /d "%~dp0"
+if exist dist\rich_demo.exe goto run_dist
+if exist build\dist\rich_demo.exe goto run_cmake
+echo ERROR: rich_demo.exe not found. Run build.bat first.
+pause
+exit /b 1
 
-set "GAME_EXE="
-set "GAME_DIR="
+:run_dist
+cd dist
+goto start
 
-if exist "build\dist\rich_demo.exe" (
-    set "GAME_EXE=build\dist\rich_demo.exe"
-    set "GAME_DIR=build\dist"
-)
+:run_cmake
+cd build\dist
+goto start
 
-if not defined GAME_EXE if exist "dist\rich_demo.exe" (
-    set "GAME_EXE=dist\rich_demo.exe"
-    set "GAME_DIR=dist"
-)
-
-if not defined GAME_EXE (
-    echo ERROR: rich_demo.exe not found.
-    echo Please run build-cmake.bat first.
-    pause
-    exit /b 1
-)
-
-echo Running: %CD%\%GAME_EXE%
-cd /d "%~dp0%GAME_DIR%"
-
+:start
 if not exist map.json (
-    echo ERROR: map.json not found in %CD%
-    pause
-    exit /b 1
+  echo ERROR: map.json missing. Rebuild with build.bat
+  pause
+  exit /b 1
 )
-
+echo Running: %CD%\rich_demo.exe
 rich_demo.exe
+echo.
 pause

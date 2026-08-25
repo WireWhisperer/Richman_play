@@ -2,84 +2,101 @@
 
 命令行版大富翁游戏（C17）。
 
-## 快速开始
+## 快速开始（仅需 gcc，推荐）
 
-### 1. 克隆到本地空文件夹
+适用于全新 Windows 机器：只要安装了 **MinGW-w64 / gcc**，**不需要 CMake**。
 
-```bash
-git clone git@github.com:WireWhisperer/Richman_play.git
+### 1. 克隆
+
+```powershell
+git clone -b YZH git@github.com:WireWhisperer/Richman_play.git
 cd Richman_play
 ```
 
-### 2. 使用 CMake 编译
-
-**Windows + Visual Studio（推荐）**
+### 2. 确认 gcc 可用
 
 ```powershell
-Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
-
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTING=ON
-cmake --build build --config Debug
-ctest --test-dir build -C Debug --output-on-failure
+gcc --version
 ```
 
-若安装的是 VS 2019，将生成器改为 `"Visual Studio 16 2019"`。也可直接双击 **`build-cmake-vs.bat`**。
+若提示找不到命令，把 MinGW 的 `bin` 目录加入系统 PATH，例如：
 
-| 文件 | 路径（VS） |
+- `C:\mingw64\bin`
+- `C:\msys64\mingw64\bin`
+
+然后重新打开终端。
+
+### 3. 编译
+
+双击 **`build.bat`**，或在项目根目录执行：
+
+```powershell
+.\build.bat
+```
+
+成功后生成：
+
+| 文件 | 路径 |
 |------|------|
-| 游戏程序 | `build\dist\Debug\rich_demo.exe` |
-| 地图文件 | `build\dist\Debug\map.json` |
+| 游戏程序 | `dist\rich_demo.exe` |
+| 地图文件 | `dist\map.json` |
 
-**Windows + MinGW（备选）**
+也可用 Makefile（若已安装 `mingw32-make`）：
 
 ```powershell
-Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
-cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
-cmake --build build
-ctest --test-dir build --output-on-failure
+mingw32-make
 ```
 
-或双击 **`build-cmake.bat`**。产物在 `build\dist\rich_demo.exe`。
+### 4. 运行
 
-**Linux / macOS**
+双击 **`run-game.bat`**，或：
+
+```powershell
+.\dist\rich_demo.exe
+```
+
+> 注意：请从 `dist` 目录运行，或使用 `run-game.bat`，确保同目录有 `map.json`。
+
+---
+
+## 备选：CMake 编译
+
+若机器同时装了 CMake，也可使用：
+
+```powershell
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+产物在 `build\dist\rich_demo.exe`。也可双击 `build-cmake.bat`。
+
+**Linux / macOS：**
 
 ```bash
-cmake -S . -B build -DBUILD_TESTING=ON
-cmake --build build
-ctest --test-dir build --output-on-failure
+make
+# 或
+cmake -S . -B build && cmake --build build
 ```
 
-> **常见错误**：若出现 `nmake` / `CMAKE_C_COMPILER not set`，请删除 `build` 文件夹，改用上面的 Visual Studio 命令（不要裸跑 `cmake -S . -B build`）。
-
-### 3. 运行游戏
-
-**Visual Studio 编译：** 双击 `build\dist\Debug\rich_demo.exe`
-
-**MinGW 编译：** 双击 `build\dist\rich_demo.exe`
-
-或在终端运行：
-
-```powershell
-.\build\dist\rich_demo.exe
-```
-
-### 备选：build.bat（仅 Windows + MinGW）
-
-若未安装 CMake，可双击 `build.bat`，生成 `dist/rich_demo.exe`。
+---
 
 ## 游戏操作
 
 1. **选玩家**：一行输入 2~4 位角色编号  
-   - 例：`21` = 2 名玩家，阿土伯 + 钱夫人  
+   - 例：`21` = 阿土伯 + 钱夫人  
    - `1` 钱夫人 / `2` 阿土伯 / `3` 孙小美 / `4` 金贝贝
 2. **初始资金**：直接回车默认 10000（范围 1000~50000）
-3. **游戏中**：`ROLL` 掷骰子，`QUERY` 查状态，`HELP` 帮助，`QUIT` 退出
+3. **游戏中**：`ROLL` 掷骰，`QUERY` 查资产，`HELP` 帮助，`QUIT` 退出  
+   任意提示阶段也可输入 `QUIT` 退出
 
 ## 目录说明
 
 | 路径 | 说明 |
 |------|------|
-| `build/dist/rich_demo.exe` | CMake 编译生成的可执行文件 |
-| `build/dist/map.json` | 游戏地图（编译时自动复制） |
+| `dist/rich_demo.exe` | **gcc / build.bat** 生成的可执行文件 |
+| `dist/map.json` | 游戏地图（编译时自动复制） |
 | `spec/map.json` | 地图源文件 |
+| `build.bat` | 仅 gcc 一键编译（无 CMake） |
+| `run-game.bat` | 一键运行 |
+| `Makefile` | `mingw32-make` / `make` 编译 |
 | `testcases/` | 自动化测试用例 |
