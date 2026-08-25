@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
-project(rich_demo C)
+project(Richman_Play)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_executable(rich_demo
+add_executable(Richman_Play
     src/main.c
     src/game.c
     src/file_utils.c
