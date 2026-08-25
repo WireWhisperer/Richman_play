@@ -165,6 +165,7 @@ void game_init(Game *g)
     g->status = GAME_RUNNING;
     g->prompt = PROMPT_NONE;
     g->winner_index = -1;
+    g->dice_preset_loaded = false;
 }
 
 void game_reset(Game *g)
@@ -186,6 +187,7 @@ void game_reset(Game *g)
     g->dice_next = 0;
     g->winner_index = -1;
     g->quit = false;
+    g->dice_preset_loaded = false;
 }
 
 int game_apply_initial_fund(Game *g, int32_t initial_fund)
@@ -603,6 +605,7 @@ int game_apply_preset(Game *g, const cJSON *preset)
     memcpy(g->dice_seq, dice, sizeof(dice));
     g->dice_count = dice_count;
     g->dice_next = 0;
+    g->dice_preset_loaded = true;
     return RC_OK;
 }
 
@@ -712,47 +715,144 @@ int game_next_player_index(const Game *g)
 
 int game_sell(Game *g, int32_t position)
 {
-    (void)g; (void)position;
-    set_error("TODO: game_sell 尚未实现（规范 8.2 SELL）");
-    return RC_INTERNAL;
+    int rc = game_sell_property(g, position);
+    if (rc != RC_OK) {
+        set_error("出售失败");
+    }
+    return rc;
+}
+
+static int handle_prompt_answer(Game *g, const char *value,
+                                int (*handler)(Game *, const char *,
+                                               char *, size_t))
+{
+    char message[1024];
+    int rc;
+    PromptType answered;
+
+    if (g == NULL || handler == NULL) {
+        return RC_INVALID_PARAMS;
+    }
+
+    answered = g->prompt;
+    message[0] = '\0';
+    rc = handler(g, value, message, sizeof(message));
+    if (message[0] != '\0') {
+        (void)printf("%s\n", message);
+    }
+
+    if (rc < 0) {
+        return rc;
+    }
+
+    if (answered == PROMPT_TOOL_SHOP) {
+        if (g->phase == PHASE_COMMAND) {
+            game_finish_action_turn(g);
+        }
+    } else if (answered == PROMPT_BUY || answered == PROMPT_UPGRADE ||
+               answered == PROMPT_GIFT_SHOP) {
+        if (g->phase == PHASE_COMMAND) {
+            game_finish_action_turn(g);
+        }
+    }
+
+    return RC_OK;
 }
 
 int game_answer(Game *g, const char *value)
 {
-    char message[1024];
-    int rc;
-
     if (g == NULL || value == NULL) {
         return RC_INVALID_PARAMS;
     }
-
-    if (g->prompt == PROMPT_TOOL_SHOP) {
-        rc = tool_shop_answer(g, value, message, sizeof(message));
-        if (message[0] != '\0') {
-            (void)printf("%s\n", message);
-        }
-        return rc < 0 ? rc : RC_OK;
+    if (g->status != GAME_RUNNING) {
+        return RC_ACTION_AFTER_END;
+    }
+    if (g->phase != PHASE_PROMPT) {
+        return RC_INVALID_PHASE;
     }
 
-    set_error("TODO: game_answer 尚未实现（规范 8.5 ANSWER）");
-    return RC_INTERNAL;
+    switch (g->prompt) {
+    case PROMPT_TOOL_SHOP:
+        return handle_prompt_answer(g, value, tool_shop_answer);
+    case PROMPT_BUY:
+        return handle_prompt_answer(g, value, land_answer_buy);
+    case PROMPT_UPGRADE:
+        return handle_prompt_answer(g, value, land_answer_upgrade);
+    case PROMPT_GIFT_SHOP:
+        return handle_prompt_answer(g, value, gift_shop_answer);
+    default:
+        set_error("未知的提示类型");
+        return RC_INTERNAL;
+    }
 }
 
 int game_query(const Game *g, char *buf, size_t bufsz)
 {
     /* QUERY：查询当前玩家资产（规范 8 表），文本不参与状态比较 */
     const PLAYER *p = game_current_player_c(g);
+    size_t offset = 0;
+    int32_t index;
+    int owned_count = 0;
+
     if (p == NULL) {
         snprintf(buf, bufsz, "当前无行动玩家。\n");
         return RC_OK;
     }
-    snprintf(buf, bufsz,
-             "玩家 %c：资金 %d，点数 %d，位置 %d，状态 %s\n"
-             "道具：路障 %d，炸弹 %d，机器娃娃 %d；财神剩余 %d 回合\n",
-             p->id, (int)p->fund, (int)p->credit, (int)p->position,
-             player_status_to_str(p->status),
-             (int)p->items.BLOCK, (int)p->items.BOMB,
-             (int)p->items.ROBOT, (int)p->god_of_wealth_rounds);
+
+    offset += (size_t)snprintf(
+        buf + offset,
+        bufsz > offset ? bufsz - offset : 0,
+        "玩家 %c：资金 %d，点数 %d，位置 %d，状态 %s\n"
+        "道具：路障 %d，炸弹 %d，机器娃娃 %d；财神剩余 %d 回合\n",
+        p->id, (int)p->fund, (int)p->credit, (int)p->position,
+        player_status_to_str(p->status),
+        (int)p->items.BLOCK, (int)p->items.BOMB,
+        (int)p->items.ROBOT, (int)p->god_of_wealth_rounds
+    );
+
+    offset += (size_t)snprintf(
+        buf + offset,
+        bufsz > offset ? bufsz - offset : 0,
+        "房产：\n"
+    );
+
+    for (index = 0; index < g->property_count; ++index) {
+        const Property *prop = &g->properties[index];
+        const char *level_name;
+        int32_t sell_price;
+
+        if (prop->owner_index != g->current_index) {
+            continue;
+        }
+
+        switch (prop->level) {
+        case 1: level_name = "茅屋"; break;
+        case 2: level_name = "洋房"; break;
+        case 3: level_name = "摩天楼"; break;
+        default: level_name = "空地"; break;
+        }
+
+        sell_price = property_sell_price(g, prop);
+        offset += (size_t)snprintf(
+            buf + offset,
+            bufsz > offset ? bufsz - offset : 0,
+            "  位置 %d，%s，出售价 %d 元（命令：SELL %d）\n",
+            prop->position,
+            level_name,
+            sell_price,
+            prop->position
+        );
+        ++owned_count;
+    }
+
+    if (owned_count == 0) {
+        offset += (size_t)snprintf(
+            buf + offset,
+            bufsz > offset ? bufsz - offset : 0,
+            "  （暂无房产）\n"
+        );
+    }
+
     return RC_OK;
 }
 
@@ -761,7 +861,7 @@ int game_help(char *buf, size_t bufsz)
     /* HELP：命令帮助文本，逐字比较不进入公共测试集（规范 16 可选内容） */
     snprintf(buf, bufsz,
              "命令：\n"
-             "  ROLL           使用预置骰子移动\n"
+             "  ROLL           掷骰子移动（1~6 步）\n"
              "  STEP <n>       按指定步数移动\n"
              "  SELL <pos>     出售指定位置地产\n"
              "  BLOCK <off>    在偏移位置放置路障(-10~10)\n"
@@ -789,9 +889,15 @@ int game_quit(Game *g)
 void handle_mine_landing(Game *g, int32_t position);
 void handle_jail_landing(Game *g);
 
+static int is_land_cell(CellType type)
+{
+    return type == CELL_LAND_1 || type == CELL_LAND_2 || type == CELL_LAND_3;
+}
+
 void game_settle_landing(Game *g)
 {
     int32_t position;
+    char message[1024];
 
     if (g == NULL || g->current_index < 0 ||
         g->current_index >= g->user_count ||
@@ -804,20 +910,44 @@ void game_settle_landing(Game *g)
         return;
     }
 
+    message[0] = '\0';
+
     switch (g->cells[position].type) {
     case CELL_MINE:
         handle_mine_landing(g, position);
+        (void)printf("到达矿地，获得 %d 点数！\n",
+                     g->cells[position].mine_points);
         break;
 
     case CELL_JAIL:
         handle_jail_landing(g);
+        (void)printf("进入监狱，需关押 %d 天！\n", JAIL_ROUNDS);
         break;
 
     case CELL_TOOL_SHOP:
-        (void)tool_shop_enter(g, NULL, 0);
+        (void)tool_shop_enter(g, message, sizeof(message));
+        if (message[0] != '\0') {
+            (void)printf("%s\n", message);
+        }
+        break;
+
+    case CELL_GIFT_SHOP:
+        (void)gift_shop_enter(g, message, sizeof(message));
+        if (message[0] != '\0') {
+            (void)printf("%s\n", message);
+        }
+        break;
+
+    case CELL_MAGIC_HOUSE:
+        (void)printf(
+            "欢迎来到魔法屋！魔法效果尚未开放，欢迎参观。\n"
+        );
         break;
 
     default:
+        if (is_land_cell(g->cells[position].type)) {
+            handle_land_landing(g, position);
+        }
         break;
     }
 }
@@ -870,5 +1000,14 @@ void game_check_finish(Game *g)
             g->winner_index = i;
             break;
         }
+    }
+    if (g->winner_index >= 0) {
+        (void)printf(
+            "\n游戏结束！获胜者：玩家 %c（资金 %d 元）\n",
+            g->players[g->winner_index].id,
+            g->players[g->winner_index].fund
+        );
+    } else {
+        (void)printf("\n游戏结束！\n");
     }
 }

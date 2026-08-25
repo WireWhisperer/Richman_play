@@ -218,6 +218,8 @@ static int prompt_initial_fund(Game *g, int32_t *initial_fund)
         return 0;
     }
 
+    *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
+
     for (;;) {
         printf("请输入初始资金（%d~%d，直接回车默认 %d，输入 QUIT 退出）：",
                MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX, MANUAL_INITIAL_FUND_DEFAULT);
@@ -292,7 +294,7 @@ static int dispatch(Game *g, const char *s)
         return game_robot(g);
     }
     if (strcmp(cmd, "QUERY") == 0) {
-        char buf[1024];
+        char buf[4096];
         int rc = game_query(g, buf, sizeof(buf));
         if (rc == RC_OK) {
             printf("%s\n", buf);
@@ -319,6 +321,32 @@ static void print_command_prompt(const Game *g)
     const PLAYER *player = game_current_player_c(g);
     const PlayerSetupCharacter *character;
 
+    if (g->phase == PHASE_PROMPT) {
+        switch (g->prompt) {
+        case PROMPT_BUY:
+            (void)printf("【购买】请输入 Y 购买 / N 放弃：");
+            return;
+        case PROMPT_UPGRADE:
+            (void)printf("【升级】请输入 Y 升级 / N 放弃：");
+            return;
+        case PROMPT_TOOL_SHOP:
+            {
+                const PLAYER *p = game_current_player_c(g);
+                int32_t credit = p != NULL ? p->credit : 0;
+                (void)printf(
+                    "【道具屋】请输入 1/2/3 购买，或 F 退出（当前点数 %d）：",
+                    credit
+                );
+            }
+            return;
+        case PROMPT_GIFT_SHOP:
+            (void)printf("【礼品屋】请输入 1/2/3 选择礼品：");
+            return;
+        default:
+            break;
+        }
+    }
+
     if (player == NULL) {
         (void)printf("> ");
         return;
@@ -342,7 +370,7 @@ static void print_command_prompt(const Game *g)
 
 int manual_ui_run(Game *g)
 {
-    int32_t initial_fund;
+    int32_t initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
 
     console_init();
 
@@ -358,6 +386,10 @@ int manual_ui_run(Game *g)
 
     char line[256];
     for (;;) {
+        if (g->status == GAME_FINISHED) {
+            break;
+        }
+
         render_map(g);
         print_command_prompt(g);
         fflush(stdout);
@@ -372,12 +404,17 @@ int manual_ui_run(Game *g)
             continue;
         }
 
+        if (g->phase == PHASE_PROMPT && is_quit_command(s)) {
+            game_quit(g);
+            break;
+        }
+
         int rc = (g->phase == PHASE_PROMPT) ? game_answer(g, s) : dispatch(g, s);
         if (rc == 1) {
             break;   /* QUIT */
         }
         if (rc != RC_OK) {
-            ResultCode code = (ResultCode)(-rc);
+            ResultCode code = (ResultCode)(rc < 0 ? -rc : rc);
             printf("错误(%s): %s\n", result_code_name(code), game_last_error());
         }
     }

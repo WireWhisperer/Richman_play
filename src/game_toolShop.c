@@ -155,6 +155,21 @@ int tool_shop_leave(Game *g, char *message, size_t message_size)
     return RC_OK;
 }
 
+static void write_invalid_tool_shop_input(const Game *g,
+                                          char *message,
+                                          size_t message_size)
+{
+    const PLAYER *player = current_player_const(g);
+    int32_t credit = player != NULL ? player->credit : 0;
+
+    write_message(
+        message,
+        message_size,
+        "输入无效：请输入1、2、3购买道具，或输入F退出。您当前拥有点数 %d 点。",
+        credit
+    );
+}
+
 int tool_shop_answer(Game *g, const char *input,
                      char *message, size_t message_size)
 {
@@ -168,8 +183,7 @@ int tool_shop_answer(Game *g, const char *input,
         return -RC_INVALID_PHASE;
     }
     if (cursor == NULL) {
-        write_message(message, message_size,
-                      "输入无效：请输入1、2、3购买道具，或输入F退出。");
+        write_invalid_tool_shop_input(g, message, message_size);
         return -RC_INVALID_PARAMS;
     }
 
@@ -196,8 +210,7 @@ int tool_shop_answer(Game *g, const char *input,
         }
     }
 
-    write_message(message, message_size,
-                  "输入无效：请输入1、2、3购买道具，或输入F退出。");
+    write_invalid_tool_shop_input(g, message, message_size);
     return -RC_INVALID_PARAMS;
 }
 

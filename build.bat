@@ -1,40 +1,41 @@
 @echo off
-setlocal enabledelayedexpansion
-
+setlocal
 cd /d "%~dp0"
+
+if exist "D:\Download\MinGW\bin\gcc.exe" set "PATH=D:\Download\MinGW\bin;%PATH%"
 
 where gcc >nul 2>&1
 if errorlevel 1 (
-    echo [错误] 未找到 gcc。请先安装 MinGW 并将 gcc 加入 PATH。
-    echo 下载地址: https://www.mingw-w64.org/
+    echo ERROR: gcc not found.
+    echo Add MinGW to PATH, e.g. D:\Download\MinGW\bin
     pause
     exit /b 1
 )
 
 if not exist dist mkdir dist
 
-set SRC=src\game.c src\game_mine.c src\game_jail.c src\game_toolShop.c ^
+gcc -std=c17 -Wall -Wextra -Iinclude -Ithird_party\cJSON -o dist\rich_demo.exe ^
+src\game.c src\game_mine.c src\game_jail.c src\game_toolShop.c ^
+src\game_property.c src\game_giftShop.c ^
 src\usr_action.c src\usr_judge.c src\file_utils.c src\path_utils.c ^
 src\case_loader.c src\action_executor.c src\actual_writer.c ^
 src\expected_checker.c src\test_runner.c src\manual_ui.c ^
 src\player_setup.c src\console.c third_party\cJSON\cJSON.c src\main.c
 
-gcc -std=c17 -Wall -Wextra -Iinclude -Ithird_party\cJSON -o dist\rich_demo.exe %SRC%
 if errorlevel 1 (
-    echo [错误] 编译失败。
+    echo ERROR: build failed.
     pause
     exit /b 1
 )
 
 copy /Y spec\map.json dist\map.json >nul
 if errorlevel 1 (
-    echo [错误] 复制地图文件失败，请确认 spec\map.json 存在。
+    echo ERROR: copy map.json failed.
     pause
     exit /b 1
 )
 
 echo.
-echo [成功] 已生成 dist\rich_demo.exe
-echo 双击 dist\rich_demo.exe 即可开始游戏。
+echo Build OK: dist\rich_demo.exe
 echo.
 pause

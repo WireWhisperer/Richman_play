@@ -160,6 +160,7 @@ typedef struct {
 
     int32_t winner_index;           /* 游戏结束时获胜玩家下标，-1 无 */
     bool    quit;                   /* QUIT 强制结束 */
+    bool    dice_preset_loaded;     /* 是否加载过 preset 骰子序列（空序列时 ROLL 报错） */
 } Game;
 
 /* ===== 生命周期（规范 7.1 / 14 步骤 3~4） ===== */
@@ -187,6 +188,14 @@ int32_t property_total_invest(const Game *g, const Property *p); /* 购买价格
 int32_t property_rent(const Game *g, const Property *p);         /* 投资总成本 / 2 */
 int32_t property_sell_price(const Game *g, const Property *p);   /* 投资总成本 x 2 */
 void get_rent(Game *g, Property p);
+void game_bankrupt_player(Game *g, int32_t player_index);
+void game_finish_action_turn(Game *g);
+void handle_land_landing(Game *g, int32_t position);
+int land_answer_buy(Game *g, const char *value, char *message, size_t message_size);
+int land_answer_upgrade(Game *g, const char *value, char *message, size_t message_size);
+int game_sell_property(Game *g, int32_t position);
+int gift_shop_enter(Game *g, char *message, size_t message_size);
+int gift_shop_answer(Game *g, const char *input, char *message, size_t message_size);
 
 /* ===== 查询 ===== */
 PLAYER *game_current_player(Game *g);
