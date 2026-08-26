@@ -88,9 +88,8 @@ int game_move_to(Game *g, int32_t steps, int8_t last_position)
         item_index = board_item_index(g, position);
         if (item_index >= 0) {
             game_boarditem_suc(g, &g->board_items[item_index], (int8_t)item_index);
-            if (g->players[g->current_index].status == HOSPITAL) {
-                break;
-            }
+            /* 路障拦截或炸弹送医后停止继续前进 */
+            break;
         }
     }
 

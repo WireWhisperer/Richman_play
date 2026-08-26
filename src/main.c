@@ -1,6 +1,9 @@
 /**
  * @file main.c
  * @brief Program entry point.
+ *
+ *   rich_demo.exe              手动对局
+ *   rich_demo.exe test [dir]   运行自动化测试（默认 testcases/）
  */
 
 #include <stdio.h>
@@ -11,6 +14,7 @@
 #include "manual_ui.h"
 #include "path_utils.h"
 #include "player_setup.h"
+#include "test_runner.h"
 
 static int try_load_map(Game *game, const char *path)
 {
@@ -65,7 +69,26 @@ static int load_map_with_fallback(Game *game)
     return RC_INVALID_MAP;
 }
 
-int main(void)
+static int run_automated_tests(int argc, char **argv)
+{
+    const char *dir = "testcases";
+    const char *results = "results";
+    int failures;
+
+    if (argc >= 3) {
+        dir = argv[2];
+    }
+
+    console_init();
+    printf("Running automated tests from: %s\n", dir);
+    failures = runner_run_dir(dir, results);
+    if (failures < 0) {
+        return 2;
+    }
+    return failures == 0 ? 0 : 1;
+}
+
+static int run_manual_game(void)
 {
     Game game;
     PlayerSetupStatus status;
@@ -102,4 +125,13 @@ int main(void)
     rc = manual_ui_run(&game);
     console_pause_before_exit();
     return rc;
+}
+
+int main(int argc, char **argv)
+{
+    if (argc >= 2 &&
+        (strcmp(argv[1], "test") == 0 || strcmp(argv[1], "--test") == 0)) {
+        return run_automated_tests(argc, argv);
+    }
+    return run_manual_game();
 }
