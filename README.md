@@ -95,6 +95,23 @@ chmod +x build.sh run-game.sh
 3. **游戏中**：`ROLL` 掷骰，`QUERY` 查资产，`HELP` 帮助，`QUIT` 退出  
    任意提示阶段也可输入 `QUIT` 退出
 
+## 自动化测试
+
+```powershell
+.\build.bat
+.\dist\rich_demo.exe test testcases
+# 或双击 run-tests.bat
+```
+
+Linux：
+
+```bash
+./build.sh
+./dist/rich_demo test testcases
+```
+
+报告与 Actual JSON 输出到 `results/`。
+
 ## 目录说明
 
 | 路径 | 说明 |
