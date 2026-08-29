@@ -65,11 +65,11 @@
     { "position": 61, "type": "LAND_3", "price": 300, "upgrade_cost": 300, "mine_points": 0 },
     { "position": 62, "type": "LAND_3", "price": 300, "upgrade_cost": 300, "mine_points": 0 },
     { "position": 63, "type": "MAGIC_HOUSE", "price": 0, "upgrade_cost": 0, "mine_points": 0 },
-    { "position": 64, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 60 },
+    { "position": 64, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 80 },
     { "position": 65, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 80 },
-    { "position": 66, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 40 },
-    { "position": 67, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 100 },
+    { "position": 66, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 80 },
+    { "position": 67, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 80 },
     { "position": 68, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 80 },
-    { "position": 69, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 20 }
+    { "position": 69, "type": "MINE", "price": 0, "upgrade_cost": 0, "mine_points": 80 }
   ]
 }

@@ -6,8 +6,7 @@
 #include "player_setup.h"
 
 #include <ctype.h>
-#include <errno.h>
-#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #define PLAYER_SETUP_INPUT_SIZE 64
@@ -25,7 +24,7 @@ static const PlayerSetupCharacter CHARACTERS[MAX_PLAYERS] = {
     {4, 'J', "金贝贝", "黄色"}
 };
 
-const PlayerSetupCharacter *player_setup_character_by_id(char id)
+static const PlayerSetupCharacter *character_by_id(char id)
 {
     int index;
 
@@ -67,36 +66,77 @@ static LineReadStatus read_line(FILE *input, char *buffer, size_t buffer_size)
     return LINE_READ_TOO_LONG;
 }
 
-static int parse_number(const char *text, long minimum, long maximum, int *value)
-{
-    char *end;
-    long parsed;
-
-    while (isspace((unsigned char)*text)) {
-        ++text;
-    }
-
-    errno = 0;
-    parsed = strtol(text, &end, 10);
-    if (text == end || errno == ERANGE) {
-        return 0;
-    }
-
-    while (isspace((unsigned char)*end)) {
-        ++end;
-    }
-
-    if (*end != '\0' || parsed < minimum || parsed > maximum) {
-        return 0;
-    }
-
-    *value = (int)parsed;
-    return 1;
-}
-
 static int write_prompt(FILE *output, const char *prompt)
 {
     return fputs(prompt, output) >= 0 && fflush(output) == 0;
+}
+
+static int trim_choices(char *text)
+{
+    char *start = text;
+    char *end;
+    size_t length;
+    size_t index;
+    size_t write_index = 0;
+
+    while (*start != '\0' && isspace((unsigned char)*start)) {
+        ++start;
+    }
+
+    if (start != text) {
+        memmove(text, start, strlen(start) + 1U);
+    }
+
+    end = text + strlen(text);
+    while (end > text && isspace((unsigned char)end[-1])) {
+        --end;
+    }
+    *end = '\0';
+
+    length = strlen(text);
+    for (index = 0U; index < length; ++index) {
+        if (!isspace((unsigned char)text[index])) {
+            text[write_index++] = text[index];
+        }
+    }
+    text[write_index] = '\0';
+    return (int)write_index;
+}
+
+static int is_quit_command(const char *text)
+{
+    char cmd[16];
+    size_t index = 0;
+    size_t length = 0;
+
+    if (text == NULL) {
+        return 0;
+    }
+
+    while (text[index] == ' ' || text[index] == '\t') {
+        ++index;
+    }
+
+    while (text[index] != '\0' && text[index] != ' ' && text[index] != '\t' &&
+           length + 1U < sizeof(cmd)) {
+        cmd[length++] = (char)toupper((unsigned char)text[index++]);
+    }
+    cmd[length] = '\0';
+    return strcmp(cmd, "QUIT") == 0;
+}
+
+static const char *status_message(PlayerSetupStatus status)
+{
+    switch (status) {
+        case PLAYER_SETUP_INVALID_COUNT:
+            return "请输入 2 到 4 位角色编号（如 21 表示两名玩家：阿土伯、钱夫人）。";
+        case PLAYER_SETUP_INVALID_CHARACTER:
+            return "角色编号错误，每位须为 1~4。";
+        case PLAYER_SETUP_DUPLICATE_CHARACTER:
+            return "角色已选择，不能重复。";
+        default:
+            return "输入无效，请重新输入。";
+    }
 }
 
 const PlayerSetupCharacter *player_setup_character(int selection)
@@ -106,6 +146,11 @@ const PlayerSetupCharacter *player_setup_character(int selection)
     }
 
     return &CHARACTERS[selection - 1];
+}
+
+const PlayerSetupCharacter *player_setup_character_by_id(char id)
+{
+    return character_by_id(id);
 }
 
 const char *player_setup_status_name(PlayerSetupStatus status)
@@ -121,6 +166,8 @@ const char *player_setup_status_name(PlayerSetupStatus status)
             return "DUPLICATE_CHARACTER";
         case PLAYER_SETUP_IO_ERROR:
             return "IO_ERROR";
+        case PLAYER_SETUP_QUIT:
+            return "QUIT";
         default:
             return "UNKNOWN";
     }
@@ -187,7 +234,7 @@ PlayerSetupStatus player_setup_print_summary(const Game *game, FILE *output)
     for (index = 0; index < game->user_count; ++index) {
         const PlayerSetupCharacter *character;
 
-        character = player_setup_character_by_id(game->players[index].id);
+        character = character_by_id(game->players[index].id);
         if (character == NULL) {
             return PLAYER_SETUP_INVALID_CHARACTER;
         }
@@ -210,46 +257,9 @@ PlayerSetupStatus player_setup_print_summary(const Game *game, FILE *output)
 PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
 {
     char buffer[PLAYER_SETUP_INPUT_SIZE];
-    int initial_fund;
 
     if (game == NULL || input == NULL || output == NULL) {
         return PLAYER_SETUP_IO_ERROR;
-    }
-
-    for (;;) {
-        LineReadStatus read_status;
-
-        if (fprintf(
-                output,
-                "请输入初始资金（%d-%d，直接回车默认 %d）：",
-                MANUAL_INITIAL_FUND_MIN,
-                MANUAL_INITIAL_FUND_MAX,
-                MANUAL_INITIAL_FUND_DEFAULT
-            ) < 0 || fflush(output) != 0) {
-            return PLAYER_SETUP_IO_ERROR;
-        }
-
-        read_status = read_line(input, buffer, sizeof(buffer));
-        if (read_status == LINE_READ_EOF) {
-            return PLAYER_SETUP_IO_ERROR;
-        }
-        if (read_status == LINE_READ_OK && buffer[0] == '\0') {
-            initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
-            break;
-        }
-        if (read_status == LINE_READ_OK &&
-            parse_number(buffer, MANUAL_INITIAL_FUND_MIN,
-                         MANUAL_INITIAL_FUND_MAX, &initial_fund)) {
-            break;
-        }
-        if (fprintf(
-                output,
-                "初始资金必须为 %d 到 %d，请重新输入。\n",
-                MANUAL_INITIAL_FUND_MIN,
-                MANUAL_INITIAL_FUND_MAX
-            ) < 0) {
-            return PLAYER_SETUP_IO_ERROR;
-        }
     }
 
     if (fputs(
@@ -257,8 +267,7 @@ PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
             "1. 钱夫人（红色/Q）\n"
             "2. 阿土伯（绿色/A）\n"
             "3. 孙小美（蓝色/S）\n"
-            "4. 金贝贝（黄色/J）\n"
-            "请一次输入 2-4 个不重复的角色编号；输入顺序即游戏顺序。\n",
+            "4. 金贝贝（黄色/J）\n",
             output
         ) < 0) {
         return PLAYER_SETUP_IO_ERROR;
@@ -270,39 +279,35 @@ PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
 
         if (!write_prompt(
                 output,
-                "请输入角色编号序列（例如 123、24、321、21）："
-            )) {
+                "请输入玩家及角色编号（2-4 位，如 21 表示阿土伯+钱夫人，输入 QUIT 退出）：")) {
             return PLAYER_SETUP_IO_ERROR;
         }
+
         read_status = read_line(input, buffer, sizeof(buffer));
         if (read_status == LINE_READ_EOF) {
             return PLAYER_SETUP_IO_ERROR;
         }
-        status = read_status == LINE_READ_OK
-            ? player_setup_apply_sequence(game, buffer)
-            : PLAYER_SETUP_INVALID_COUNT;
-        if (status == PLAYER_SETUP_OK) {
-            break;
+        if (read_status == LINE_READ_TOO_LONG) {
+            if (fputs("输入过长，请重新输入。\n", output) < 0) {
+                return PLAYER_SETUP_IO_ERROR;
+            }
+            continue;
         }
-        if (status == PLAYER_SETUP_INVALID_COUNT) {
-            if (fputs("请输入 2 到 4 个角色编号。\n", output) < 0) {
-                return PLAYER_SETUP_IO_ERROR;
-            }
-        } else if (status == PLAYER_SETUP_DUPLICATE_CHARACTER) {
-            if (fputs("角色不能重复选择，请重新输入。\n", output) < 0) {
-                return PLAYER_SETUP_IO_ERROR;
-            }
-        } else if (fputs("角色编号只能是 1 到 4，请重新输入。\n", output) < 0) {
+
+        (void)trim_choices(buffer);
+        if (is_quit_command(buffer)) {
+            game_quit(game);
+            return PLAYER_SETUP_QUIT;
+        }
+
+        status = player_setup_apply_sequence(game, buffer);
+        if (status == PLAYER_SETUP_OK) {
+            return player_setup_print_summary(game, output);
+        }
+
+        if (fputs(status_message(status), output) < 0 ||
+            fputc('\n', output) == EOF) {
             return PLAYER_SETUP_IO_ERROR;
         }
     }
-
-    for (int32_t index = 0; index < game->user_count; ++index) {
-        game->players[index].fund = initial_fund;
-    }
-    if (fprintf(output, "初始资金已设为 %d。\n", initial_fund) < 0) {
-        return PLAYER_SETUP_IO_ERROR;
-    }
-
-    return player_setup_print_summary(game, output);
 }

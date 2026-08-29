@@ -1,0 +1,55 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "windows-vs",
+      "displayName": "Windows Visual Studio",
+      "description": "Use Visual Studio 2022 generator (recommended on Windows)",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "windows-mingw",
+      "displayName": "Windows MinGW",
+      "description": "Use MinGW gcc on Windows",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTING": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-vs-debug",
+      "configurePreset": "windows-vs",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-mingw",
+      "configurePreset": "windows-mingw"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "windows-vs-debug",
+      "configurePreset": "windows-vs",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "windows-mingw",
+      "configurePreset": "windows-mingw",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

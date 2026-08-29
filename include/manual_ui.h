@@ -11,18 +11,11 @@
 #include "cJSON.h"
 #include "game.h"
 
-/** Formats the current turn prompt, for example "钱夫人> ". */
-int manual_ui_format_turn_prompt(
-    const Game *g,
-    char *buffer,
-    size_t buffer_size
-);
-
 /**
  * 交互式手动对局：
  *   输入 ROLL/STEP n/SELL n/BLOCK n/BOMB n/ROBOT/QUERY/HELP/QUIT，
  *   ANSWER 阶段输入 Y/N/1/2/3/F。命令不区分大小写。
- * @param g 已加载地图、完成资金和角色设置的游戏
+ * @param g 已加载地图并初始化的游戏
  * @return 0 正常退出
  */
 int manual_ui_run(Game *g);

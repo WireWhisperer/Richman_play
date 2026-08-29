@@ -180,7 +180,7 @@
         "phase": "COMMAND",
         "game_status": "RUNNING",
         "players": [
-          {"id": "A", "fund": 1000, "credit": 100, "position": 69, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "A", "fund": 1000, "credit": 100, "position": 68, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
           {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
         ],
         "properties": [],
@@ -188,7 +188,7 @@
         "dice_sequence": []
       },
       "actions": [
-        {"command": "STEP", "params": {"steps": 1}}
+        {"command": "STEP", "params": {"steps": 2}}
       ],
       "expected": {
         "players": [{"id": "A", "credit": 100, "position": 0}]

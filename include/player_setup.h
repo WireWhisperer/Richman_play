@@ -17,7 +17,8 @@ typedef enum {
     PLAYER_SETUP_INVALID_COUNT,
     PLAYER_SETUP_INVALID_CHARACTER,
     PLAYER_SETUP_DUPLICATE_CHARACTER,
-    PLAYER_SETUP_IO_ERROR
+    PLAYER_SETUP_IO_ERROR,
+    PLAYER_SETUP_QUIT
 } PlayerSetupStatus;
 
 typedef struct {
@@ -30,7 +31,7 @@ typedef struct {
 /** Returns immutable character metadata for selection 1-4, or NULL. */
 const PlayerSetupCharacter *player_setup_character(int selection);
 
-/** Returns immutable character metadata for Q/A/S/J, or NULL. */
+/** Returns character metadata for role id Q/A/S/J, or NULL. */
 const PlayerSetupCharacter *player_setup_character_by_id(char id);
 
 /** Returns a stable English name for a setup status. */

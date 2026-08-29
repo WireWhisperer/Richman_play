@@ -15,6 +15,9 @@
  */
 #include "manual_ui.h"
 
+#include "console.h"
+#include "player_setup.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
@@ -23,20 +26,10 @@
 #include <string.h>
 #include <time.h>
 
-#include "player_setup.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004   /* Win10 SDK 值，老 SDK 未定义 */
-#endif
-#endif
-
 /* ==================== 终端颜色 ==================== */
 
 enum { COL_DEF, COL_RED, COL_GREEN, COL_BLUE, COL_YELLOW };
 
-/** 角色颜色（规范 3.1：Q 红 / A 绿 / S 蓝 / J 黄） */
 static int player_color(char id)
 {
     switch (id) {
@@ -57,25 +50,6 @@ static const char *ansi_of(int color)
     case COL_YELLOW: return "\033[33m";
     default:         return "\033[0m";
     }
-}
-
-/** Windows 控制台：打开 ANSI 虚拟终端模式，并切换为 UTF-8 代码页避免中文乱码 */
-static void enable_ansi(void)
-{
-#ifdef _WIN32
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (h == INVALID_HANDLE_VALUE) {
-        return;
-    }
-    DWORD mode = 0;
-    if (GetConsoleMode(h, &mode)) {
-        SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-    }
-#else
-    /* POSIX 终端原生支持 ANSI，无需处理 */
-#endif
 }
 
 /* ==================== 地图渲染 ==================== */
@@ -216,6 +190,69 @@ static bool parse_int_arg(const char *s, int32_t *out)
     return true;
 }
 
+static int is_quit_command(const char *text)
+{
+    char cmd[16];
+    size_t i = 0;
+    size_t j = 0;
+
+    if (text == NULL) {
+        return 0;
+    }
+
+    while (text[i] == ' ' || text[i] == '\t') {
+        ++i;
+    }
+    while (text[i] != '\0' && text[i] != ' ' && text[i] != '\t' && j < sizeof(cmd) - 1) {
+        cmd[j++] = (char)toupper((unsigned char)text[i++]);
+    }
+    cmd[j] = '\0';
+    return strcmp(cmd, "QUIT") == 0;
+}
+
+/** 启动时提示输入初始资金：空行使用默认值，越界则重新输入；QUIT 退出。返回 1 表示退出。 */
+static int prompt_initial_fund(Game *g, int32_t *initial_fund)
+{
+    char line[256];
+
+    if (g == NULL || initial_fund == NULL) {
+        return 0;
+    }
+
+    *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
+
+    for (;;) {
+        printf("请输入初始资金（%d~%d，直接回车默认 %d，输入 QUIT 退出）：",
+               MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX, MANUAL_INITIAL_FUND_DEFAULT);
+        fflush(stdout);
+
+        if (fgets(line, sizeof(line), stdin) == NULL) {
+            *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
+            return 0;
+        }
+
+        char *s = trim(line);
+        if (is_quit_command(s)) {
+            game_quit(g);
+            return 1;
+        }
+        if (*s == '\0') {
+            *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
+            return 0;
+        }
+
+        int32_t fund = 0;
+        if (!parse_int_arg(s, &fund) ||
+            fund < MANUAL_INITIAL_FUND_MIN || fund > MANUAL_INITIAL_FUND_MAX) {
+            printf("输入无效，请输入 %d~%d 之间的整数。\n",
+                   MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX);
+            continue;
+        }
+        *initial_fund = fund;
+        return 0;
+    }
+}
+
 /* ==================== 命令分发 ==================== */
 
 /** 返回 0 成功；负数 = ResultCode；1 = QUIT 请求退出 */
@@ -263,7 +300,7 @@ static int dispatch(Game *g, const char *s)
         return game_robot(g);
     }
     if (strcmp(cmd, "QUERY") == 0) {
-        char buf[1024];
+        char buf[4096];
         int rc = game_query(g, buf, sizeof(buf));
         if (rc == RC_OK) {
             printf("%s\n", buf);
@@ -285,66 +322,83 @@ static int dispatch(Game *g, const char *s)
     return RC_INVALID_COMMAND;
 }
 
-/* ==================== 主循环 ==================== */
-
-int manual_ui_format_turn_prompt(
-    const Game *g,
-    char *buffer,
-    size_t buffer_size
-)
+static void print_command_prompt(const Game *g)
 {
-    const PLAYER *player;
+    const PLAYER *player = game_current_player_c(g);
     const PlayerSetupCharacter *character;
-    int written;
 
-    if (g == NULL || buffer == NULL || buffer_size == 0U) {
-        return -RC_INVALID_PARAMS;
+    if (g->phase == PHASE_PROMPT) {
+        switch (g->prompt) {
+        case PROMPT_BUY:
+            (void)printf("【购买】请输入 Y 购买 / N 放弃：");
+            return;
+        case PROMPT_UPGRADE:
+            (void)printf("【升级】请输入 Y 升级 / N 放弃：");
+            return;
+        case PROMPT_TOOL_SHOP:
+            {
+                const PLAYER *p = game_current_player_c(g);
+                int32_t credit = p != NULL ? p->credit : 0;
+                (void)printf(
+                    "【道具屋】请输入 1/2/3 购买，或 F 退出（当前点数 %d）：",
+                    credit
+                );
+            }
+            return;
+        case PROMPT_GIFT_SHOP:
+            (void)printf("【礼品屋】请输入 1/2/3 选择礼品：");
+            return;
+        default:
+            break;
+        }
     }
-    player = game_current_player_c(g);
+
     if (player == NULL) {
-        return -RC_INVALID_PARAMS;
+        (void)printf("> ");
+        return;
     }
+
     character = player_setup_character_by_id(player->id);
     if (character == NULL) {
-        return -RC_INVALID_PARAMS;
+        (void)printf("%c> ", player->id);
+        return;
     }
 
-    written = snprintf(
-        buffer,
-        buffer_size,
-        g->phase == PHASE_PROMPT ? "%s(ANSWER)> " : "%s> ",
-        character->name
+    (void)printf(
+        "%s%s%s> ",
+        ansi_of(player_color(player->id)),
+        character->name,
+        ansi_of(COL_DEF)
     );
-    return written >= 0 && (size_t)written < buffer_size
-        ? RC_OK
-        : -RC_INVALID_PARAMS;
 }
+
+/* ==================== 主循环 ==================== */
 
 int manual_ui_run(Game *g)
 {
-    enable_ansi();
+    int32_t initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
+
+    console_init();
     srand((unsigned int)time(NULL));
 
-    for (int32_t i = 0; i < g->user_count; ++i) {
-        g->players[i].credit = 0;
-        g->players[i].position = 0;
-        g->players[i].status = NORMAL;
-        g->players[i].remaining_rounds = 0;
+    if (prompt_initial_fund(g, &initial_fund)) {
+        return RC_OK;
     }
-    g->current_index = 0;
-    g->phase = PHASE_COMMAND;
-    g->status = GAME_RUNNING;
-    g->prompt = PROMPT_NONE;
+    int setup_rc = game_apply_initial_fund(g, initial_fund);
+    if (setup_rc != RC_OK) {
+        fprintf(stderr, "游戏初始化失败: %s\n", game_last_error());
+        return setup_rc;
+    }
+    printf("初始资金已设为 %d。\n", initial_fund);
 
     char line[256];
     for (;;) {
-        char prompt[64];
+        if (g->status == GAME_FINISHED) {
+            break;
+        }
 
         render_map(g);
-        if (manual_ui_format_turn_prompt(g, prompt, sizeof(prompt)) != RC_OK) {
-            (void)snprintf(prompt, sizeof(prompt), "玩家> ");
-        }
-        printf("%s", prompt);
+        print_command_prompt(g);
         fflush(stdout);
 
         if (fgets(line, sizeof(line), stdin) == NULL) {
@@ -357,12 +411,17 @@ int manual_ui_run(Game *g)
             continue;
         }
 
+        if (g->phase == PHASE_PROMPT && is_quit_command(s)) {
+            game_quit(g);
+            break;
+        }
+
         int rc = (g->phase == PHASE_PROMPT) ? game_answer(g, s) : dispatch(g, s);
         if (rc == 1) {
             break;   /* QUIT */
         }
         if (rc != RC_OK) {
-            ResultCode code = (ResultCode)(-rc);
+            ResultCode code = (ResultCode)(rc < 0 ? -rc : rc);
             printf("错误(%s): %s\n", result_code_name(code), game_last_error());
         }
     }
