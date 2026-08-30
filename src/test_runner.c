@@ -81,11 +81,12 @@ static int load_map_for_case(Game *g, const char *case_path, const char *map_fil
     char path[1024];
     dir_of(case_path, dir, sizeof(dir));
 
+    /* Prefer spec/map.json so incorrect root map.json cannot shadow mines. */
     static const char *const suffixes[] = {
-        "%s/%s",
-        "%s/../%s",
         "%s/../spec/%s",
         "%s/../../spec/%s",
+        "%s/%s",
+        "%s/../%s",
     };
     size_t i;
 
