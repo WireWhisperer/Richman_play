@@ -12,6 +12,9 @@ function(richman_enable_warnings target_name)
         target_compile_definitions(${target_name} PRIVATE _CRT_SECURE_NO_WARNINGS)
         target_compile_options(${target_name} PRIVATE /W4 /WX /utf-8)
     else()
+        if(WIN32)
+            target_compile_definitions(${target_name} PRIVATE _CRT_SECURE_NO_WARNINGS)
+        endif()
         target_compile_options(${target_name} PRIVATE
             -Wall
             -Wextra
