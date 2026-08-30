@@ -116,6 +116,7 @@ int gift_shop_answer(Game *g, const char *input,
         break;
     case 3:
         player->god_of_wealth_rounds = GOD_OF_WEALTH_TURNS;
+        g->god_acquired_this_turn = true;   /* 获得财神的当回合不扣减 */
         snprintf(message, message_size,
                  "财神降临！接下来 %d 回合内经过他人地产免过路费。",
                  GOD_OF_WEALTH_TURNS);

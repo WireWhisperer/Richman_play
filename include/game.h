@@ -161,6 +161,7 @@ typedef struct {
     int32_t winner_index;           /* 游戏结束时获胜玩家下标，-1 无 */
     bool    quit;                   /* QUIT 强制结束 */
     bool    dice_preset_loaded;     /* 是否加载过 preset 骰子序列（空序列时 ROLL 报错） */
+    bool    god_acquired_this_turn; /* 本回合获得财神：回合结束不扣减财神回合 */
 } Game;
 
 /* ===== 生命周期（规范 7.1 / 14 步骤 3~4） ===== */

@@ -188,6 +188,7 @@ void game_reset(Game *g)
     g->winner_index = -1;
     g->quit = false;
     g->dice_preset_loaded = false;
+    g->god_acquired_this_turn = false;
 }
 
 int game_apply_initial_fund(Game *g, int32_t initial_fund)
@@ -594,6 +595,7 @@ int game_apply_preset(Game *g, const cJSON *preset)
     g->prompt = PROMPT_NONE;
     g->winner_index = -1;
     g->quit = false;
+    g->god_acquired_this_turn = false;
 
     memcpy(g->properties, props, sizeof(props));
     g->property_count = prop_count;
@@ -881,10 +883,11 @@ int game_help(char *buf, size_t bufsz)
 
 int game_quit(Game *g)
 {
-    /* QUIT：强制结束游戏（规范 8 表：结束游戏） */
+    /* QUIT：强制结束游戏（规范 8 表：结束游戏；pending_prompt 清空） */
     g->quit = true;
     g->status = GAME_FINISHED;
     g->phase = PHASE_ENDED;
+    g->prompt = PROMPT_NONE;
     return RC_OK;
 }
 
@@ -978,6 +981,9 @@ void game_next_turn(Game *g)
         }
         if (p->status == HOSPITAL || p->status == IMPRISONED) {
             p->remaining_rounds--;
+            if (p->god_of_wealth_rounds > 0) {
+                --p->god_of_wealth_rounds;   /* 轮空消耗财神回合 */
+            }
             if (p->remaining_rounds <= 0) {
                 p->status = NORMAL;
                 p->remaining_rounds = 0;

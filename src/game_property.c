@@ -124,9 +124,11 @@ void game_finish_action_turn(Game *g)
     }
 
     player = game_current_player(g);
-    if (player != NULL && player->god_of_wealth_rounds > 0) {
+    if (player != NULL && player->god_of_wealth_rounds > 0 &&
+        !g->god_acquired_this_turn) {
         --player->god_of_wealth_rounds;
     }
+    g->god_acquired_this_turn = false;
 
     game_next_turn(g);
     game_check_finish(g);

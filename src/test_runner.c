@@ -134,6 +134,27 @@ static int error_code_matches(const TestCase *tc, int code)
     return strcmp(name, tc->expected_error_code) == 0;
 }
 
+/** 写入规范 13 格式的结果报告（PASS/FAIL/ERROR 都落盘） */
+static void write_report_file(const TestCase *tc, const char *results_dir,
+                              const RunOutcome *outcome)
+{
+    char *report = runner_report_json(tc, outcome);
+    char report_path[1024];
+
+    if (report == NULL) {
+        return;
+    }
+    if (results_dir != NULL && results_dir[0] != '\0') {
+        ensure_dir(results_dir);
+        snprintf(report_path, sizeof(report_path), "%s/%s_report.json",
+                 results_dir, tc->case_id);
+    } else {
+        snprintf(report_path, sizeof(report_path), "%s_report.json", tc->case_id);
+    }
+    fu_write_file(report_path, report);
+    free(report);
+}
+
 static int runner_run_loaded_case(TestCase *tc, const char *case_path,
                                   const char *results_dir, RunOutcome *outcome)
 {
@@ -150,9 +171,11 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
         if (expects_error(tc) && error_code_matches(tc, rc)) {
             outcome->result = RESULT_PASS;
             outcome->code = RC_OK;
+            write_report_file(tc, results_dir, outcome);
             return 0;
         }
         outcome_error(outcome, rc, errbuf);
+        write_report_file(tc, results_dir, outcome);
         return 0;
     }
 
@@ -161,6 +184,7 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
         snprintf(errbuf, sizeof(errbuf), "地图文件错误: %s (%s)",
                  tc->map_file, game_last_error());
         outcome_error(outcome, RC_INVALID_MAP, errbuf);
+        write_report_file(tc, results_dir, outcome);
         return 0;
     }
 
@@ -170,9 +194,11 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
         if (expects_error(tc) && error_code_matches(tc, rc)) {
             outcome->result = RESULT_PASS;
             outcome->code = RC_OK;
+            write_report_file(tc, results_dir, outcome);
             return 0;
         }
         outcome_error(outcome, rc, game_last_error());
+        write_report_file(tc, results_dir, outcome);
         return 0;
     }
 
@@ -181,9 +207,11 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
         if (expects_error(tc) && error_code_matches(tc, rc)) {
             outcome->result = RESULT_PASS;
             outcome->code = RC_OK;
+            write_report_file(tc, results_dir, outcome);
             return 0;
         }
         outcome_error(outcome, rc, ar.message);
+        write_report_file(tc, results_dir, outcome);
         return 0;
     }
 
@@ -192,6 +220,7 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
                  "期望错误 %s，但 Actions 全部成功",
                  tc->expected_error_code[0] ? tc->expected_error_code : "ERROR");
         outcome_error(outcome, RC_ASSERT_NOT_EQUAL, errbuf);
+        write_report_file(tc, results_dir, outcome);
         return 0;
     }
 
@@ -207,6 +236,7 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
         if (actual_write_file(&g, tc->case_id, actual_path) != RC_OK) {
             snprintf(errbuf, sizeof(errbuf), "Actual 导出失败: %s", actual_path);
             outcome_error(outcome, RC_IO_ERROR, errbuf);
+            write_report_file(tc, results_dir, outcome);
             return 0;
         }
         snprintf(outcome->actual_path, sizeof(outcome->actual_path), "%s", actual_path);
@@ -230,21 +260,7 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
                  outcome->match_err.message);
     }
 
-    {
-        char *report = runner_report_json(tc, outcome);
-        if (report != NULL) {
-            char report_path[1024];
-            if (results_dir != NULL && results_dir[0] != '\0') {
-                snprintf(report_path, sizeof(report_path), "%s/%s_report.json",
-                         results_dir, tc->case_id);
-            } else {
-                snprintf(report_path, sizeof(report_path), "%s_report.json",
-                         tc->case_id);
-            }
-            fu_write_file(report_path, report);
-            free(report);
-        }
-    }
+    write_report_file(tc, results_dir, outcome);
     return 0;
 }
 
@@ -300,13 +316,32 @@ int runner_run_file(const char *path, const char *results_dir)
     free(text);
 
     tests = cJSON_GetObjectItemCaseSensitive(root, "tests");
-    if (cJSON_IsArray(tests)) {
+    if (tests != NULL) {
+        /* 套件文件（补充条款 A）：顶层存在 tests 字段 */
         char schema[SCHEMA_VERSION_MAX];
         const cJSON *sv = cJSON_GetObjectItemCaseSensitive(root, "schema_version");
         int i;
 
         if (!fu_json_get_string(sv, schema, sizeof(schema))) {
-            snprintf(schema, sizeof(schema), "1.0");
+            cJSON_Delete(root);
+            fprintf(stderr, "套件文件无效: %s：缺少顶层必填字段 schema_version\n", path);
+            return -1;
+        }
+        if (strcmp(schema, "1.0") != 0) {
+            cJSON_Delete(root);
+            fprintf(stderr, "套件文件无效: %s：不支持的 schema_version: %s（当前为 1.0）\n",
+                    path, schema);
+            return -1;
+        }
+        if (!cJSON_IsArray(tests)) {
+            cJSON_Delete(root);
+            fprintf(stderr, "套件文件无效: %s：tests 必须为数组\n", path);
+            return -1;
+        }
+        if (cJSON_GetArraySize(tests) == 0) {
+            cJSON_Delete(root);
+            fprintf(stderr, "套件文件无效: %s：tests 不能为空数组\n", path);
+            return -1;
         }
 
         for (i = 0; i < cJSON_GetArraySize(tests); ++i) {
@@ -314,6 +349,7 @@ int runner_run_file(const char *path, const char *results_dir)
             cJSON *copy = cJSON_Duplicate(item, 1);
             TestCase tc;
             RunOutcome oc;
+            int dup = 0;
 
             if (copy == NULL) {
                 failures++;
@@ -328,6 +364,24 @@ int runner_run_file(const char *path, const char *results_dir)
                 continue;
             }
             cJSON_Delete(copy);
+
+            /* G1：套件内 case_id 唯一（补充条款 A 第 5 节） */
+            for (int k = 0; k < i; ++k) {
+                const cJSON *prev = cJSON_GetArrayItem(tests, k);
+                const cJSON *pcid = cJSON_GetObjectItemCaseSensitive(prev, "case_id");
+                if (cJSON_IsString(pcid) && strcmp(pcid->valuestring, tc.case_id) == 0) {
+                    dup = 1;
+                    break;
+                }
+            }
+            if (dup) {
+                printf("[ERROR] %s#%d\n  -> 重复 case_id: %s（INVALID_PRESET）\n",
+                       path, i + 1, tc.case_id);
+                failures++;
+                ran++;
+                case_free(&tc);
+                continue;
+            }
 
             runner_run_loaded_case(&tc, path, results_dir, &oc);
             print_outcome(tc.case_id, &oc);
