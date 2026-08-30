@@ -6,7 +6,9 @@
 #include "player_setup.h"
 
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define PLAYER_SETUP_INPUT_SIZE 64
@@ -71,13 +73,10 @@ static int write_prompt(FILE *output, const char *prompt)
     return fputs(prompt, output) >= 0 && fflush(output) == 0;
 }
 
-static int trim_choices(char *text)
+static void trim_outer_whitespace(char *text)
 {
     char *start = text;
     char *end;
-    size_t length;
-    size_t index;
-    size_t write_index = 0;
 
     while (*start != '\0' && isspace((unsigned char)*start)) {
         ++start;
@@ -92,6 +91,15 @@ static int trim_choices(char *text)
         --end;
     }
     *end = '\0';
+}
+
+static int trim_choices(char *text)
+{
+    size_t length;
+    size_t index;
+    size_t write_index = 0;
+
+    trim_outer_whitespace(text);
 
     length = strlen(text);
     for (index = 0U; index < length; ++index) {
@@ -123,6 +131,86 @@ static int is_quit_command(const char *text)
     }
     cmd[length] = '\0';
     return strcmp(cmd, "QUIT") == 0;
+}
+
+static int parse_initial_fund(const char *text, int32_t *initial_fund)
+{
+    char *end;
+    long value;
+
+    if (text == NULL || initial_fund == NULL || text[0] == '\0') {
+        return 0;
+    }
+
+    errno = 0;
+    value = strtol(text, &end, 10);
+    if (errno == ERANGE || end == text || *end != '\0' ||
+        value < MANUAL_INITIAL_FUND_MIN ||
+        value > MANUAL_INITIAL_FUND_MAX) {
+        return 0;
+    }
+
+    *initial_fund = (int32_t)value;
+    return 1;
+}
+
+static PlayerSetupStatus prompt_initial_fund(
+    Game *game,
+    FILE *input,
+    FILE *output,
+    int32_t *initial_fund
+)
+{
+    char buffer[PLAYER_SETUP_INPUT_SIZE];
+
+    for (;;) {
+        LineReadStatus read_status;
+
+        if (fprintf(
+                output,
+                "请输入初始资金（%d~%d，直接回车默认 %d，输入 QUIT 退出）：",
+                MANUAL_INITIAL_FUND_MIN,
+                MANUAL_INITIAL_FUND_MAX,
+                MANUAL_INITIAL_FUND_DEFAULT
+            ) < 0 || fflush(output) != 0) {
+            return PLAYER_SETUP_IO_ERROR;
+        }
+
+        read_status = read_line(input, buffer, sizeof(buffer));
+        if (read_status == LINE_READ_EOF) {
+            return PLAYER_SETUP_IO_ERROR;
+        }
+        if (read_status == LINE_READ_TOO_LONG) {
+            if (fputs("输入过长，请重新输入。\n", output) < 0) {
+                return PLAYER_SETUP_IO_ERROR;
+            }
+            continue;
+        }
+
+        trim_outer_whitespace(buffer);
+        if (is_quit_command(buffer)) {
+            game_quit(game);
+            return PLAYER_SETUP_QUIT;
+        }
+        if (buffer[0] == '\0') {
+            *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
+        } else if (!parse_initial_fund(buffer, initial_fund)) {
+            if (fprintf(
+                    output,
+                    "输入无效，请输入 %d~%d 之间的整数。\n",
+                    MANUAL_INITIAL_FUND_MIN,
+                    MANUAL_INITIAL_FUND_MAX
+                ) < 0) {
+                return PLAYER_SETUP_IO_ERROR;
+            }
+            continue;
+        }
+
+        if (fprintf(output, "初始资金已设为 %d。\n", (int)*initial_fund) < 0) {
+            return PLAYER_SETUP_IO_ERROR;
+        }
+        return PLAYER_SETUP_OK;
+    }
 }
 
 static const char *status_message(PlayerSetupStatus status)
@@ -257,9 +345,21 @@ PlayerSetupStatus player_setup_print_summary(const Game *game, FILE *output)
 PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
 {
     char buffer[PLAYER_SETUP_INPUT_SIZE];
+    int32_t initial_fund;
+    PlayerSetupStatus fund_status;
 
     if (game == NULL || input == NULL || output == NULL) {
         return PLAYER_SETUP_IO_ERROR;
+    }
+
+    fund_status = prompt_initial_fund(
+        game,
+        input,
+        output,
+        &initial_fund
+    );
+    if (fund_status != PLAYER_SETUP_OK) {
+        return fund_status;
     }
 
     if (fputs(
@@ -302,6 +402,9 @@ PlayerSetupStatus player_setup_run(Game *game, FILE *input, FILE *output)
 
         status = player_setup_apply_sequence(game, buffer);
         if (status == PLAYER_SETUP_OK) {
+            if (game_apply_initial_fund(game, initial_fund) != RC_OK) {
+                return PLAYER_SETUP_IO_ERROR;
+            }
             return player_setup_print_summary(game, output);
         }
 
