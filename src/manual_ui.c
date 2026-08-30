@@ -210,49 +210,6 @@ static int is_quit_command(const char *text)
     return strcmp(cmd, "QUIT") == 0;
 }
 
-/** 启动时提示输入初始资金：空行使用默认值，越界则重新输入；QUIT 退出。返回 1 表示退出。 */
-static int prompt_initial_fund(Game *g, int32_t *initial_fund)
-{
-    char line[256];
-
-    if (g == NULL || initial_fund == NULL) {
-        return 0;
-    }
-
-    *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
-
-    for (;;) {
-        printf("请输入初始资金（%d~%d，直接回车默认 %d，输入 QUIT 退出）：",
-               MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX, MANUAL_INITIAL_FUND_DEFAULT);
-        fflush(stdout);
-
-        if (fgets(line, sizeof(line), stdin) == NULL) {
-            *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
-            return 0;
-        }
-
-        char *s = trim(line);
-        if (is_quit_command(s)) {
-            game_quit(g);
-            return 1;
-        }
-        if (*s == '\0') {
-            *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
-            return 0;
-        }
-
-        int32_t fund = 0;
-        if (!parse_int_arg(s, &fund) ||
-            fund < MANUAL_INITIAL_FUND_MIN || fund > MANUAL_INITIAL_FUND_MAX) {
-            printf("输入无效，请输入 %d~%d 之间的整数。\n",
-                   MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX);
-            continue;
-        }
-        *initial_fund = fund;
-        return 0;
-    }
-}
-
 /* ==================== 命令分发 ==================== */
 
 /** 返回 0 成功；负数 = ResultCode；1 = QUIT 请求退出 */
@@ -376,20 +333,8 @@ static void print_command_prompt(const Game *g)
 
 int manual_ui_run(Game *g)
 {
-    int32_t initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
-
     console_init();
     srand((unsigned int)time(NULL));
-
-    if (prompt_initial_fund(g, &initial_fund)) {
-        return RC_OK;
-    }
-    int setup_rc = game_apply_initial_fund(g, initial_fund);
-    if (setup_rc != RC_OK) {
-        fprintf(stderr, "游戏初始化失败: %s\n", game_last_error());
-        return setup_rc;
-    }
-    printf("初始资金已设为 %d。\n", initial_fund);
 
     char line[256];
     for (;;) {

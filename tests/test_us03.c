@@ -168,6 +168,8 @@ static void test_invalid_character_does_not_modify_game(void)
 static void test_cli_reprompts_and_prints_summary(void)
 {
     char output_text[4096];
+    const char *fund_prompt;
+    const char *character_prompt;
     FILE *input;
     FILE *output;
     Game game;
@@ -177,7 +179,7 @@ static void test_cli_reprompts_and_prints_summary(void)
     assert(input != NULL);
     assert(output != NULL);
 
-    assert(fputs("1\n11\n12\n", input) >= 0);
+    assert(fputs("999\n5000\n1\n11\n12\n", input) >= 0);
     rewind(input);
 
     game_init(&game);
@@ -185,12 +187,72 @@ static void test_cli_reprompts_and_prints_summary(void)
     assert(game.user_count == 2);
     assert(game.players[0].id == 'Q');
     assert(game.players[1].id == 'A');
+    assert(game.players[0].fund == 5000);
+    assert(game.players[1].fund == 5000);
 
     read_output(output, output_text, sizeof(output_text));
+    fund_prompt = strstr(output_text, "请输入初始资金");
+    character_prompt = strstr(output_text, "请输入玩家及角色编号");
+    assert(fund_prompt != NULL);
+    assert(character_prompt != NULL);
+    assert(fund_prompt < character_prompt);
+    assert(strstr(output_text, "输入无效，请输入 1000~50000") != NULL);
+    assert(strstr(output_text, "初始资金已设为 5000") != NULL);
     assert(strstr(output_text, "请输入 2 到 4 位角色编号") != NULL);
     assert(strstr(output_text, "角色已选择，不能重复") != NULL);
     assert(strstr(output_text, "玩家 1：钱夫人（红色/Q）") != NULL);
     assert(strstr(output_text, "玩家 2：阿土伯（绿色/A）") != NULL);
+
+    assert(fclose(input) == 0);
+    assert(fclose(output) == 0);
+}
+
+static void test_cli_empty_fund_uses_default(void)
+{
+    FILE *input;
+    FILE *output;
+    Game game;
+
+    input = tmpfile();
+    output = tmpfile();
+    assert(input != NULL);
+    assert(output != NULL);
+
+    assert(fputs("\n21\n", input) >= 0);
+    rewind(input);
+
+    game_init(&game);
+    assert(player_setup_run(&game, input, output) == PLAYER_SETUP_OK);
+    assert(game.user_count == 2);
+    assert(game.players[0].id == 'A');
+    assert(game.players[1].id == 'Q');
+    assert(game.players[0].fund == MANUAL_INITIAL_FUND_DEFAULT);
+    assert(game.players[1].fund == MANUAL_INITIAL_FUND_DEFAULT);
+
+    assert(fclose(input) == 0);
+    assert(fclose(output) == 0);
+}
+
+static void test_cli_quit_during_fund_setup(void)
+{
+    FILE *input;
+    FILE *output;
+    Game game;
+
+    input = tmpfile();
+    output = tmpfile();
+    assert(input != NULL);
+    assert(output != NULL);
+
+    assert(fputs("quit\n", input) >= 0);
+    rewind(input);
+
+    game_init(&game);
+    assert(player_setup_run(&game, input, output) == PLAYER_SETUP_QUIT);
+    assert(game.quit);
+    assert(game.status == GAME_FINISHED);
+    assert(game.phase == PHASE_ENDED);
+    assert(game.user_count == 0);
 
     assert(fclose(input) == 0);
     assert(fclose(output) == 0);
@@ -229,6 +291,8 @@ int main(void)
     test_duplicate_character_does_not_modify_game();
     test_invalid_character_does_not_modify_game();
     test_cli_reprompts_and_prints_summary();
+    test_cli_empty_fund_uses_default();
+    test_cli_quit_during_fund_setup();
     test_cli_eof_does_not_modify_game();
     return 0;
 }
