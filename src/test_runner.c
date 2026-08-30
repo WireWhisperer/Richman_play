@@ -25,8 +25,12 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <io.h>
+#include <fcntl.h>
 #else
 #include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 const char *test_result_to_str(TestResult r)
@@ -37,6 +41,69 @@ const char *test_result_to_str(TestResult r)
     case RESULT_ERROR: return "ERROR";
     }
     return "UNKNOWN";
+}
+
+/* 屏蔽游戏交互 printf，避免 PASS 时刷屏；失败时再输出定位信息。 */
+typedef struct {
+    int saved_fd;
+    int null_fd;
+    int active;
+} StdoutSilence;
+
+static void stdout_silence_begin(StdoutSilence *s)
+{
+    s->saved_fd = -1;
+    s->null_fd = -1;
+    s->active = 0;
+    (void)fflush(stdout);
+#ifdef _WIN32
+    s->saved_fd = _dup(_fileno(stdout));
+    s->null_fd = _open("NUL", _O_WRONLY);
+    if (s->saved_fd >= 0 && s->null_fd >= 0 &&
+        _dup2(s->null_fd, _fileno(stdout)) == 0) {
+        s->active = 1;
+    }
+#else
+    s->saved_fd = dup(STDOUT_FILENO);
+    s->null_fd = open("/dev/null", O_WRONLY);
+    if (s->saved_fd >= 0 && s->null_fd >= 0 &&
+        dup2(s->null_fd, STDOUT_FILENO) == 0) {
+        s->active = 1;
+    }
+#endif
+}
+
+static void stdout_silence_end(StdoutSilence *s)
+{
+    if (s == NULL) {
+        return;
+    }
+    (void)fflush(stdout);
+    if (s->active && s->saved_fd >= 0) {
+#ifdef _WIN32
+        (void)_dup2(s->saved_fd, _fileno(stdout));
+#else
+        (void)dup2(s->saved_fd, STDOUT_FILENO);
+#endif
+    }
+#ifdef _WIN32
+    if (s->saved_fd >= 0) {
+        (void)_close(s->saved_fd);
+    }
+    if (s->null_fd >= 0) {
+        (void)_close(s->null_fd);
+    }
+#else
+    if (s->saved_fd >= 0) {
+        (void)close(s->saved_fd);
+    }
+    if (s->null_fd >= 0) {
+        (void)close(s->null_fd);
+    }
+#endif
+    s->saved_fd = -1;
+    s->null_fd = -1;
+    s->active = 0;
 }
 
 /* ==================== 路径与目录工具 ==================== */
@@ -177,7 +244,12 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
         return 0;
     }
 
-    rc = action_execute_all(&g, tc->actions, &ar);
+    {
+        StdoutSilence silence;
+        stdout_silence_begin(&silence);
+        rc = action_execute_all(&g, tc->actions, &ar);
+        stdout_silence_end(&silence);
+    }
     if (rc != RC_OK) {
         if (expects_error(tc) && error_code_matches(tc, rc)) {
             outcome->result = RESULT_PASS;
@@ -268,13 +340,50 @@ int runner_run_case(const char *case_path, const char *results_dir, RunOutcome *
     return 0;
 }
 
-static void print_outcome(const char *label, const RunOutcome *oc)
+static void print_outcome(const TestCase *tc, const RunOutcome *oc)
 {
-    printf("[%s] %s\n", test_result_to_str(oc->result), label);
+    const char *id = (tc != NULL && tc->case_id[0] != '\0') ? tc->case_id : "(unknown)";
+
+    if (oc->result == RESULT_PASS) {
+        printf("[PASS] %s\n", id);
+        return;
+    }
+
+    printf("[%s] %s", test_result_to_str(oc->result), id);
+    if (tc != NULL && tc->case_name[0] != '\0') {
+        printf(" — %s", tc->case_name);
+    }
+    printf("\n");
+
     if (oc->result == RESULT_ERROR) {
-        printf("  -> %s\n", oc->message);
-    } else if (oc->result == RESULT_FAIL) {
-        printf("  -> %s | %s\n", oc->match_err.path, oc->match_err.message);
+        printf("  code: %s\n", result_code_name((ResultCode)oc->code));
+        if (oc->message[0] != '\0') {
+            printf("  message: %s\n", oc->message);
+        }
+        return;
+    }
+
+    /* FAIL：输出足以定位差异的字段 */
+    {
+        const MatchError *m = &oc->match_err;
+        printf("  code: %s\n", result_code_name((ResultCode)oc->code));
+        if (m->path[0] != '\0') {
+            printf("  path: %s\n", m->path);
+        }
+        if (m->expected[0] != '\0') {
+            printf("  expected: %s\n", m->expected);
+        }
+        if (m->actual[0] != '\0') {
+            printf("  actual: %s\n", m->actual);
+        }
+        if (m->message[0] != '\0') {
+            printf("  message: %s\n", m->message);
+        } else if (oc->message[0] != '\0') {
+            printf("  message: %s\n", oc->message);
+        }
+        if (oc->actual_path[0] != '\0') {
+            printf("  actual_file: %s\n", oc->actual_path);
+        }
     }
 }
 
@@ -331,7 +440,7 @@ int runner_run_file(const char *path, const char *results_dir)
             cJSON_Delete(copy);
 
             runner_run_loaded_case(&tc, path, results_dir, &oc);
-            print_outcome(tc.case_id, &oc);
+            print_outcome(&tc, &oc);
             if (oc.result != RESULT_PASS) {
                 failures++;
             }
@@ -346,8 +455,18 @@ int runner_run_file(const char *path, const char *results_dir)
     cJSON_Delete(root);
     {
         RunOutcome oc;
-        runner_run_case(path, results_dir, &oc);
-        print_outcome(path, &oc);
+        TestCase tc;
+        char load_err[512];
+
+        test_case_init(&tc);
+        if (case_load_file(&tc, path, load_err, sizeof(load_err)) != RC_OK) {
+            printf("[ERROR] %s\n  code: %s\n  message: %s\n",
+                   path, "INVALID_JSON", load_err);
+            return 1;
+        }
+        runner_run_loaded_case(&tc, path, results_dir, &oc);
+        print_outcome(&tc, &oc);
+        case_free(&tc);
         return oc.result == RESULT_PASS ? 0 : 1;
     }
 }
