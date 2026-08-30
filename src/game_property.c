@@ -173,16 +173,9 @@ void handle_land_landing(Game *g, int32_t position)
                          land_level_name(prop->level));
             return;
         }
+        /* 无论资金是否足够都弹出升级提示；资金不足在回答 Y 时拒绝 */
         cell = &g->cells[position];
         upgrade_cost = cell->upgrade_cost;
-        if (player->fund < upgrade_cost) {
-            (void)game_print(
-                "这是您自己的%s，升级需 %d 元，资金不足。\n",
-                land_level_name(prop->level),
-                upgrade_cost
-            );
-            return;
-        }
         g->phase = PHASE_PROMPT;
         g->prompt = PROMPT_UPGRADE;
         (void)game_print(

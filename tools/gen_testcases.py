@@ -202,9 +202,9 @@ NEW.append(C("TC-US11-004", "摩天楼不再出现升级提示",
     {"current_user": "Q", "phase": "COMMAND",
      "players": [{"id": "A", "fund": 1000, "position": 1}],
      "properties": [PROP(1, "A", 3)]}))
-NEW.append(C("TC-US11-005", "升级资金不足不出现提示且不扣款",
+NEW.append(C("TC-US11-005", "升级资金不足仍弹提示且回答后不扣款",
     PR([P("A", fund=150, pos=0), P("Q", pos=20)], properties=[PROP(1, "A", 0)]),
-    [A("STEP", steps=1)],
+    [A("STEP", steps=1), ANS("Y")],
     {"current_user": "Q", "phase": "COMMAND",
      "players": [{"id": "A", "fund": 150, "position": 1}],
      "properties": [PROP(1, "A", 0)]}))
@@ -610,9 +610,17 @@ NEW.append(C("TC-US26-008", "STEP70移动整圈回到原位",
     [A("STEP", steps=70)],
     {"current_user": "Q",
      "players": [{"id": "A", "position": 0}]}))
-NEW.append(C("TC-US26-009", "STEP超过70报INVALID_PARAMS",
+NEW.append(C("TC-US26-006", "STEP步数为0原地结算并结束回合",
     PR([P("A", pos=0), P("Q", pos=40)]),
-    [A("STEP", steps=71)], {}, er="ERROR", ec="INVALID_PARAMS"))
+    [A("STEP", steps=0)],
+    {"current_user": "Q",
+     "players": [{"id": "A", "position": 0}]}))
+NEW.append(C("TC-US26-009", "STEP允许超过一圈的步数",
+    PR([P("A", pos=0), P("Q", pos=40)]),
+    [A("STEP", steps=100), ANS("N")],
+    {"current_user": "Q",
+     "players": [{"id": "A", "position": 30}],
+     "properties_absent": [30]}))
 
 # ================= US07 位置显示（补充） =================
 NEW.append(C("TC-US07-009", "三人重叠时显示当前玩家",

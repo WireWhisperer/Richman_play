@@ -125,7 +125,7 @@ int game_step(Game *g, int32_t steps)
     if (g->phase != PHASE_COMMAND) {
         return RC_INVALID_PHASE;
     }
-    if (steps < DICE_MIN || steps > MAP_SIZE) {
+    if (steps < 0) {
         return RC_INVALID_PARAMS;
     }
 

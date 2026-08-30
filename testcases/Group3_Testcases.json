@@ -5182,64 +5182,6 @@
       }
     },
     {
-      "case_id": "TC-US26-006",
-      "case_name": "step步数为0非法",
-      "map_file": "map.json",
-      "preset": {
-        "users": [
-          "A",
-          "Q"
-        ],
-        "current_user": "A",
-        "phase": "COMMAND",
-        "game_status": "RUNNING",
-        "players": [
-          {
-            "id": "A",
-            "fund": 1000,
-            "credit": 0,
-            "position": 0,
-            "status": "NORMAL",
-            "remaining_rounds": 0,
-            "items": {
-              "BLOCK": 0,
-              "BOMB": 0,
-              "ROBOT": 0
-            },
-            "god_of_wealth_rounds": 0
-          },
-          {
-            "id": "Q",
-            "fund": 1000,
-            "credit": 0,
-            "position": 20,
-            "status": "NORMAL",
-            "remaining_rounds": 0,
-            "items": {
-              "BLOCK": 0,
-              "BOMB": 0,
-              "ROBOT": 0
-            },
-            "god_of_wealth_rounds": 0
-          }
-        ],
-        "properties": [],
-        "map_items": [],
-        "dice_sequence": []
-      },
-      "actions": [
-        {
-          "command": "STEP",
-          "params": {
-            "steps": 0
-          }
-        }
-      ],
-      "expected": {},
-      "expected_result": "ERROR",
-      "expected_error_code": "INVALID_PARAMS"
-    },
-    {
       "case_id": "TC-US26-007",
       "case_name": "step步数为负非法",
       "map_file": "map.json",
@@ -7048,7 +6990,7 @@
     },
     {
       "case_id": "TC-US11-005",
-      "case_name": "升级资金不足不出现提示且不扣款",
+      "case_name": "升级资金不足仍弹提示且回答后不扣款",
       "map_file": "map.json",
       "preset": {
         "users": [
@@ -7103,6 +7045,12 @@
           "command": "STEP",
           "params": {
             "steps": 1
+          }
+        },
+        {
+          "command": "ANSWER",
+          "params": {
+            "value": "Y"
           }
         }
       ],
@@ -12393,8 +12341,8 @@
       }
     },
     {
-      "case_id": "TC-US26-009",
-      "case_name": "STEP超过70报INVALID_PARAMS",
+      "case_id": "TC-US26-006",
+      "case_name": "STEP步数为0原地结算并结束回合",
       "map_file": "map.json",
       "preset": {
         "users": [
@@ -12442,13 +12390,92 @@
         {
           "command": "STEP",
           "params": {
-            "steps": 71
+            "steps": 0
           }
         }
       ],
-      "expected": {},
-      "expected_result": "ERROR",
-      "expected_error_code": "INVALID_PARAMS"
+      "expected": {
+        "current_user": "Q",
+        "players": [
+          {
+            "id": "A",
+            "position": 0
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US26-009",
+      "case_name": "STEP允许超过一圈的步数",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 0,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 40,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 100
+          }
+        },
+        {
+          "command": "ANSWER",
+          "params": {
+            "value": "N"
+          }
+        }
+      ],
+      "expected": {
+        "current_user": "Q",
+        "players": [
+          {
+            "id": "A",
+            "position": 30
+          }
+        ],
+        "properties_absent": [
+          30
+        ]
+      }
     },
     {
       "case_id": "TC-US07-009",

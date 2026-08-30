@@ -93,8 +93,8 @@ int action_validate(const Game *g, const cJSON *action, ActionResult *out)
         int32_t steps;
         if (!cJSON_IsObject(params) ||
             !fu_json_get_int32(cJSON_GetObjectItemCaseSensitive(params, "steps"), &steps) ||
-            steps <= 0) {
-            set_result(out, RC_INVALID_PARAMS, "STEP 的 params.steps 必须为正整数");
+            steps < 0) {
+            set_result(out, RC_INVALID_PARAMS, "STEP 的 params.steps 必须为非负整数");
             return RC_INVALID_PARAMS;
         }
     } else if (strcasecmp(c, "SELL") == 0) {
