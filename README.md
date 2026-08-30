@@ -103,11 +103,13 @@ chmod +x build.sh run-game.sh
 # 或双击 run-tests.bat
 ```
 
-Linux：
+Linux / macOS：
 
 ```bash
 ./build.sh
-./dist/rich_demo test testcases
+./run-tests.sh
+# 或: ./dist/rich_demo test testcases
+# 指定用例目录: ./run-tests.sh testcases
 ```
 
 报告与 Actual JSON 输出到 `results/`。
@@ -121,6 +123,7 @@ Linux：
 | `spec/map.json` | 地图源文件 |
 | `build.bat` / `build.sh` | 仅 gcc 一键编译（Windows / Linux） |
 | `run-game.bat` / `run-game.sh` | 一键运行 |
+| `run-tests.bat` / `run-tests.sh` | 一键自动化测试 |
 | `Makefile` | `mingw32-make` / `make` 编译 |
 | `sources.rsp` | gcc 源文件列表 |
 | `testcases/` | 自动化测试用例 |

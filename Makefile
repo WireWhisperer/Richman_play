@@ -43,7 +43,7 @@ else
   RM = rm -f
 endif
 
-.PHONY: all clean run
+.PHONY: all clean run test
 
 all: $(EXE) $(OUT_DIR)/map.json
 
@@ -58,6 +58,9 @@ $(OUT_DIR)/map.json: spec/map.json | $(OUT_DIR)
 
 run: all
 	./$(EXE)
+
+test: all
+	./$(EXE) test testcases
 
 clean:
 	-$(RM) $(EXE) $(OUT_DIR)/map.json
