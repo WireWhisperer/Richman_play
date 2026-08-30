@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.0",
+  "user_story": "TOOLS",
+  "tests": [
+    {
+      "case_id": "TC-TOOLS-001",
+      "case_name": "路障支持负偏移并跨越地图起点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 2, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 1, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "BLOCK", "params": {"offset": -4}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "items": {"BLOCK": 0}}],
+        "map_items": [{"position": 68, "type": "BLOCK"}]
+      }
+    },
+    {
+      "case_id": "TC-TOOLS-002",
+      "case_name": "炸弹可放在正向第10格并消耗一个",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 10, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 1, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 30, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "BOMB", "params": {"offset": 10}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "items": {"BOMB": 0}}],
+        "map_items": [{"position": 20, "type": "BOMB"}]
+      }
+    },
+    {
+      "case_id": "TC-TOOLS-003",
+      "case_name": "移动起点上的炸弹不会触发",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 5, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 30, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [{"position": 5, "type": "BOMB"}],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 2}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "position": 7, "status": "NORMAL"}],
+        "map_items": [{"position": 5, "type": "BOMB"}]
+      }
+    },
+    {
+      "case_id": "TC-TOOLS-004",
+      "case_name": "机器娃娃跨起点清除前方1到10格全部道具",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 68, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 1}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 30, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [
+          {"position": 0, "type": "BOMB"},
+          {"position": 8, "type": "BLOCK"},
+          {"position": 9, "type": "BOMB"},
+          {"position": 67, "type": "BLOCK"},
+          {"position": 68, "type": "BOMB"},
+          {"position": 69, "type": "BLOCK"}
+        ],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "ROBOT"}
+      ],
+      "expected": {
+        "players": [{"id": "A", "items": {"ROBOT": 0}}],
+        "map_items": [
+          {"position": 9, "type": "BOMB"},
+          {"position": 67, "type": "BLOCK"},
+          {"position": 68, "type": "BOMB"}
+        ],
+        "map_items_absent": [0, 8, 69]
+      }
+    },
+    {
+      "case_id": "TC-TOOLS-005",
+      "case_name": "机器娃娃前方无道具时仍为一次性消耗",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 1}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 40, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [{"position": 19, "type": "BLOCK"}],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "ROBOT"}
+      ],
+      "expected": {
+        "players": [{"id": "A", "items": {"ROBOT": 0}}],
+        "map_items": [{"position": 19, "type": "BLOCK"}]
+      }
+    },
+    {
+      "case_id": "TC-TOOLS-006",
+      "case_name": "道具放置距离超过10格被拒绝",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 1, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 40, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "BLOCK", "params": {"offset": 11}}
+      ],
+      "expected": {},
+      "expected_result": "ERROR",
+      "expected_error_code": "INVALID_PARAMS"
+    }
+  ]
+}

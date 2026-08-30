@@ -6,7 +6,7 @@
  *   tool_shop_enter()  - 玩家落在道具屋时建立购买提示；
  *   tool_shop_answer() - 处理一次 1/2/3/F 输入。
  *
- * 道具的实际使用由 game_items.c 负责，本模块只管理购买事务。
+ * 道具的实际使用由 game_tools.c 负责，本模块只管理购买事务。
  */
 #include "game.h"
 

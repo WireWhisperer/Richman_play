@@ -26,7 +26,7 @@ add_library(richman_core
     src/game_mine.c
     src/game_jail.c
     src/game_toolShop.c
-    src/game_items.c
+    src/game_tools.c
     src/game_property.c
     src/game_giftShop.c
     src/usr_action.c
