@@ -4,7 +4,8 @@ project(rich_demo LANGUAGES C)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/dist)
 
 function(richman_enable_warnings target_name)
     if(MSVC)
@@ -20,23 +21,17 @@ function(richman_enable_warnings target_name)
     endif()
 endfunction()
 
-# cJSON：规范 v1.1 建议的 C JSON 库
-include(FetchContent)
-set(ENABLE_CJSON_TEST OFF CACHE BOOL "" FORCE)
-set(ENABLE_CJSON_UTILS OFF CACHE BOOL "" FORCE)
-set(ENABLE_CJSON_INSTALL OFF CACHE BOOL "" FORCE)
-set(CJSON_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-# 关闭 cJSON 的自定义编译标志（含 /Za，与 /std:c17 冲突）
-set(ENABLE_CUSTOM_COMPILER_FLAGS OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(cJSON
-    GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
-    GIT_TAG v1.7.18
-)
-FetchContent_MakeAvailable(cJSON)
-
 add_library(richman_core
     src/game.c
+    src/game_mine.c
+    src/game_jail.c
+    src/game_toolShop.c
+    src/game_property.c
+    src/game_giftShop.c
+    src/usr_action.c
+    src/usr_judge.c
     src/file_utils.c
+    src/path_utils.c
     src/case_loader.c
     src/action_executor.c
     src/actual_writer.c
@@ -44,19 +39,28 @@ add_library(richman_core
     src/test_runner.c
     src/manual_ui.c
     src/player_setup.c
-    src/buy_land.c
+    src/console.c
+    third_party/cJSON/cJSON.c
 )
 
 target_include_directories(richman_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${cJSON_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cJSON
 )
-target_link_libraries(richman_core PUBLIC cjson)
 richman_enable_warnings(richman_core)
 
 add_executable(rich_demo src/main.c)
 target_link_libraries(rich_demo PRIVATE richman_core)
 richman_enable_warnings(rich_demo)
+
+add_custom_command(
+    TARGET rich_demo
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/spec/map.json"
+        "$<TARGET_FILE_DIR:rich_demo>/map.json"
+    COMMENT "Copy map.json next to rich_demo"
+)
 
 include(CTest)
 

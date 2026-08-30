@@ -12,7 +12,11 @@
 
 static void assert_game_unchanged(const Game *expected, const Game *actual)
 {
-    assert(memcmp(expected, actual, sizeof(*expected)) == 0);
+    if (expected == NULL || actual == NULL ||
+        memcmp(expected, actual, sizeof(*expected)) != 0) {
+        fputs("game state was modified unexpectedly\n", stderr);
+        abort();
+    }
 }
 
 static void read_output(FILE *stream, char *buffer, size_t buffer_size)
@@ -93,6 +97,17 @@ static void test_sequence_31_uses_selection_order(void)
     assert(game.players[1].id == 'Q');
 }
 
+static void test_sequence_21_uses_selection_order(void)
+{
+    Game game;
+
+    game_init(&game);
+    assert(player_setup_apply_sequence(&game, "21") == PLAYER_SETUP_OK);
+    assert(game.user_count == 2);
+    assert(game.players[0].id == 'A');
+    assert(game.players[1].id == 'Q');
+}
+
 static void test_four_players_supported(void)
 {
     Game game;
@@ -162,7 +177,7 @@ static void test_cli_reprompts_and_prints_summary(void)
     assert(input != NULL);
     assert(output != NULL);
 
-    assert(fputs("1\n2\n5\n1\n1\n2\n", input) >= 0);
+    assert(fputs("1\n11\n12\n", input) >= 0);
     rewind(input);
 
     game_init(&game);
@@ -172,9 +187,8 @@ static void test_cli_reprompts_and_prints_summary(void)
     assert(game.players[1].id == 'A');
 
     read_output(output, output_text, sizeof(output_text));
-    assert(strstr(output_text, "玩家数量必须为 2 到 4") != NULL);
-    assert(strstr(output_text, "角色编号错误") != NULL);
-    assert(strstr(output_text, "角色已选择") != NULL);
+    assert(strstr(output_text, "请输入 2 到 4 位角色编号") != NULL);
+    assert(strstr(output_text, "角色已选择，不能重复") != NULL);
     assert(strstr(output_text, "玩家 1：钱夫人（红色/Q）") != NULL);
     assert(strstr(output_text, "玩家 2：阿土伯（绿色/A）") != NULL);
 
@@ -209,6 +223,7 @@ int main(void)
     test_game_init_preserves_empty_state_contract();
     test_sequence_12_uses_selection_order();
     test_sequence_31_uses_selection_order();
+    test_sequence_21_uses_selection_order();
     test_four_players_supported();
     test_invalid_count_does_not_modify_game();
     test_duplicate_character_does_not_modify_game();
