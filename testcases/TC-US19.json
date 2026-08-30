@@ -1,0 +1,506 @@
+{
+  "schema_version": "1.0",
+  "user_story": "US19",
+  "tests": [
+    {
+      "case_id": "TC-US19-001",
+      "case_name": "robot清除前方路障和炸弹",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 1
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [
+          {
+            "position": 22,
+            "type": "BLOCK"
+          },
+          {
+            "position": 25,
+            "type": "BOMB"
+          }
+        ],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "ROBOT"
+        }
+      ],
+      "expected": {
+        "map_items_absent": [
+          22,
+          25
+        ],
+        "players": [
+          {
+            "id": "A",
+            "items": {
+              "ROBOT": 0
+            }
+          }
+        ],
+        "current_user": "A",
+        "phase": "COMMAND"
+      }
+    },
+    {
+      "case_id": "TC-US19-002",
+      "case_name": "robot仅清除路障",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 1
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [
+          {
+            "position": 22,
+            "type": "BLOCK"
+          }
+        ],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "ROBOT"
+        }
+      ],
+      "expected": {
+        "map_items_absent": [
+          22
+        ],
+        "players": [
+          {
+            "id": "A",
+            "items": {
+              "ROBOT": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US19-003",
+      "case_name": "robot仅清除炸弹",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 1
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [
+          {
+            "position": 25,
+            "type": "BOMB"
+          }
+        ],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "ROBOT"
+        }
+      ],
+      "expected": {
+        "map_items_absent": [
+          25
+        ],
+        "players": [
+          {
+            "id": "A",
+            "items": {
+              "ROBOT": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US19-004",
+      "case_name": "前方无障碍仍消耗机器娃娃",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 1
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "ROBOT"
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "items": {
+              "ROBOT": 0
+            }
+          }
+        ],
+        "map_items": []
+      }
+    },
+    {
+      "case_id": "TC-US19-005",
+      "case_name": "无机器娃娃无法使用",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [
+          {
+            "position": 22,
+            "type": "BLOCK"
+          }
+        ],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "ROBOT"
+        }
+      ],
+      "expected": {
+        "map_items": [
+          {
+            "position": 22,
+            "type": "BLOCK"
+          }
+        ],
+        "players": [
+          {
+            "id": "A",
+            "items": {
+              "ROBOT": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US19-006",
+      "case_name": "大写ROBOT同样有效",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 1
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [
+          {
+            "position": 22,
+            "type": "BLOCK"
+          }
+        ],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "ROBOT"
+        }
+      ],
+      "expected": {
+        "map_items_absent": [
+          22
+        ],
+        "players": [
+          {
+            "id": "A",
+            "items": {
+              "ROBOT": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US19-007",
+      "case_name": "ROBOT不结束回合可继续STEP",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 1
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "ROBOT"
+        },
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 2
+          }
+        },
+        {
+          "command": "ANSWER",
+          "params": {
+            "value": "N"
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "position": 22,
+            "items": {
+              "ROBOT": 0
+            }
+          }
+        ],
+        "current_user": "Q",
+        "phase": "COMMAND"
+      }
+    }
+  ]
+}

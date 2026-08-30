@@ -1,0 +1,375 @@
+{
+  "schema_version": "1.0",
+  "user_story": "US14",
+  "tests": [
+    {
+      "case_id": "TC-US14-001",
+      "case_name": "扣款后资金>0不破产",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 200,
+            "credit": 0,
+            "position": 0,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 800,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "Q",
+            "level": 0
+          }
+        ],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "fund": 100,
+            "status": "NORMAL"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US14-002",
+      "case_name": "扣款后资金=0不破产",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 100,
+            "credit": 0,
+            "position": 0,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 800,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "Q",
+            "level": 0
+          }
+        ],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "fund": 0,
+            "status": "NORMAL"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US14-003",
+      "case_name": "扣款后资金<0破产",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 99,
+            "credit": 0,
+            "position": 0,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 800,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "Q",
+            "level": 0
+          }
+        ],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "fund": 0,
+            "status": "BANKRUPT"
+          }
+        ],
+        "game_status": "FINISHED",
+        "winner": "Q"
+      }
+    },
+    {
+      "case_id": "TC-US14-004",
+      "case_name": "破产后地产恢复空地",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 50,
+            "credit": 100,
+            "position": 0,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 1,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 800,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "Q",
+            "level": 0
+          },
+          {
+            "position": 2,
+            "owner": "A",
+            "level": 1
+          }
+        ],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "status": "BANKRUPT",
+            "fund": 0,
+            "credit": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            }
+          }
+        ],
+        "properties_absent": [
+          2
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "Q",
+            "level": 0
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US14-005",
+      "case_name": "破产后只剩一人游戏结束",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 50,
+            "credit": 0,
+            "position": 0,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 800,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "Q",
+            "level": 0
+          }
+        ],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
+      ],
+      "expected": {
+        "game_status": "FINISHED",
+        "winner": "Q",
+        "phase": "ENDED"
+      }
+    }
+  ]
+}

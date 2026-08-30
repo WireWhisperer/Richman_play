@@ -7,23 +7,62 @@
       "case_name": "地图共70格环绕移动",
       "map_file": "map.json",
       "preset": {
-        "users": ["A", "Q"],
+        "users": [
+          "A",
+          "Q"
+        ],
         "current_user": "A",
         "phase": "COMMAND",
         "game_status": "RUNNING",
         "players": [
-          {"id": "A", "fund": 1000, "credit": 0, "position": 0, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
-          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 0,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
         ],
         "properties": [],
         "map_items": [],
         "dice_sequence": []
       },
       "actions": [
-        {"command": "STEP", "params": {"steps": 70}}
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 70
+          }
+        }
       ],
       "expected": {
-        "players": [{"id": "A", "position": 0}]
+        "players": [
+          {
+            "id": "A",
+            "position": 0
+          }
+        ]
       }
     },
     {
@@ -31,23 +70,64 @@
       "case_name": "起点无额外效果",
       "map_file": "map.json",
       "preset": {
-        "users": ["A", "Q"],
+        "users": [
+          "A",
+          "Q"
+        ],
         "current_user": "A",
         "phase": "COMMAND",
         "game_status": "RUNNING",
         "players": [
-          {"id": "A", "fund": 1000, "credit": 0, "position": 69, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
-          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 69,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
         ],
         "properties": [],
         "map_items": [],
         "dice_sequence": []
       },
       "actions": [
-        {"command": "STEP", "params": {"steps": 1}}
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
       ],
       "expected": {
-        "players": [{"id": "A", "fund": 1000, "credit": 0, "position": 0}]
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 0
+          }
+        ]
       }
     },
     {
@@ -55,23 +135,63 @@
       "case_name": "医院正常到达无效果",
       "map_file": "map.json",
       "preset": {
-        "users": ["A", "Q"],
+        "users": [
+          "A",
+          "Q"
+        ],
         "current_user": "A",
         "phase": "COMMAND",
         "game_status": "RUNNING",
         "players": [
-          {"id": "A", "fund": 1000, "credit": 0, "position": 13, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
-          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 13,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
         ],
         "properties": [],
         "map_items": [],
         "dice_sequence": []
       },
       "actions": [
-        {"command": "STEP", "params": {"steps": 1}}
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
       ],
       "expected": {
-        "players": [{"id": "A", "position": 14, "status": "NORMAL"}]
+        "players": [
+          {
+            "id": "A",
+            "position": 14,
+            "status": "NORMAL"
+          }
+        ]
       }
     },
     {
@@ -79,24 +199,72 @@
       "case_name": "道具屋位置正确触发道具选择",
       "map_file": "map.json",
       "preset": {
-        "users": ["A", "Q"],
+        "users": [
+          "A",
+          "Q"
+        ],
         "current_user": "A",
         "phase": "COMMAND",
         "game_status": "RUNNING",
         "players": [
-          {"id": "A", "fund": 1000, "credit": 30, "position": 27, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
-          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 30,
+            "position": 27,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
         ],
         "properties": [],
         "map_items": [],
         "dice_sequence": []
       },
       "actions": [
-        {"command": "STEP", "params": {"steps": 1}},
-        {"command": "ANSWER", "params": {"value": "F"}}
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        },
+        {
+          "command": "ANSWER",
+          "params": {
+            "value": "F"
+          }
+        }
       ],
       "expected": {
-        "players": [{"id": "A", "credit": 30, "position": 28, "items": {"BOMB": 0}}]
+        "players": [
+          {
+            "id": "A",
+            "credit": 30,
+            "position": 28,
+            "items": {
+              "BOMB": 0
+            }
+          }
+        ]
       }
     },
     {
@@ -104,24 +272,801 @@
       "case_name": "礼品屋位置正确触发礼品选择",
       "map_file": "map.json",
       "preset": {
-        "users": ["A", "Q"],
+        "users": [
+          "A",
+          "Q"
+        ],
         "current_user": "A",
         "phase": "COMMAND",
         "game_status": "RUNNING",
         "players": [
-          {"id": "A", "fund": 1000, "credit": 0, "position": 34, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
-          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 34,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
         ],
         "properties": [],
         "map_items": [],
         "dice_sequence": []
       },
       "actions": [
-        {"command": "STEP", "params": {"steps": 1}},
-        {"command": "ANSWER", "params": {"value": "1"}}
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        },
+        {
+          "command": "ANSWER",
+          "params": {
+            "value": "1"
+          }
+        }
       ],
       "expected": {
-        "players": [{"id": "A", "fund": 3000, "position": 35}]
+        "players": [
+          {
+            "id": "A",
+            "fund": 3000,
+            "position": 35
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-006",
+      "case_name": "医院位置14可到达且不住院",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 13,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "position": 14,
+            "status": "NORMAL"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-007",
+      "case_name": "道具屋位置28触发道具屋",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 50,
+            "position": 27,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
+      ],
+      "expected": {
+        "phase": "PROMPT",
+        "pending_prompt": "TOOL_SHOP",
+        "players": [
+          {
+            "id": "A",
+            "position": 28
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-008",
+      "case_name": "礼品屋位置35触发礼品屋",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 34,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
+      ],
+      "expected": {
+        "phase": "PROMPT",
+        "pending_prompt": "GIFT_SHOP",
+        "players": [
+          {
+            "id": "A",
+            "position": 35
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-009",
+      "case_name": "监狱位置49触发入狱",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 48,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "position": 49,
+            "status": "JAIL",
+            "remaining_rounds": 2
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-010",
+      "case_name": "地图环绕68走3步到1",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 68,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 3
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "position": 1
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-011",
+      "case_name": "重叠位置display_players当前优先",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "Q",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [],
+      "expected": {
+        "display_players": [
+          {
+            "position": 5,
+            "visible_user": "Q"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-012",
+      "case_name": "放置路障后map_items可见",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 1,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "BLOCK",
+          "params": {
+            "offset": 2
+          }
+        }
+      ],
+      "expected": {
+        "map_items": [
+          {
+            "position": 22,
+            "type": "BLOCK"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-013",
+      "case_name": "放置炸弹后map_items可见",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 1,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "BOMB",
+          "params": {
+            "offset": 2
+          }
+        }
+      ],
+      "expected": {
+        "map_items": [
+          {
+            "position": 22,
+            "type": "BOMB"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-014",
+      "case_name": "地段一价格通过购买验证200",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 200,
+            "credit": 0,
+            "position": 0,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        },
+        {
+          "command": "ANSWER",
+          "params": {
+            "value": "Y"
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "fund": 0
+          }
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "A",
+            "level": 0
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-015",
+      "case_name": "地段二价格通过购买验证500",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 500,
+            "credit": 0,
+            "position": 28,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        },
+        {
+          "command": "ANSWER",
+          "params": {
+            "value": "Y"
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "fund": 0
+          }
+        ],
+        "properties": [
+          {
+            "position": 29,
+            "owner": "A",
+            "level": 0
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "TC-US04-016",
+      "case_name": "地段三价格通过购买验证300",
+      "map_file": "map.json",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {
+            "id": "A",
+            "fund": 300,
+            "credit": 0,
+            "position": 35,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 5,
+            "status": "NORMAL",
+            "remaining_rounds": 0,
+            "items": {
+              "BLOCK": 0,
+              "BOMB": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 1
+          }
+        },
+        {
+          "command": "ANSWER",
+          "params": {
+            "value": "Y"
+          }
+        }
+      ],
+      "expected": {
+        "players": [
+          {
+            "id": "A",
+            "fund": 0
+          }
+        ],
+        "properties": [
+          {
+            "position": 36,
+            "owner": "A",
+            "level": 0
+          }
+        ]
       }
     }
   ]

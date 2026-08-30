@@ -106,7 +106,12 @@ void game_bankrupt_player(Game *g, int32_t player_index)
 
     g->players[player_index].status = BANKRUPT;
     g->players[player_index].fund = 0;
+    g->players[player_index].credit = 0;
     g->players[player_index].remaining_rounds = 0;
+    g->players[player_index].items.BLOCK = 0;
+    g->players[player_index].items.BOMB = 0;
+    g->players[player_index].items.ROBOT = 0;
+    g->players[player_index].god_of_wealth_rounds = 0;
 
     for (i = g->property_count - 1; i >= 0; --i) {
         if (g->properties[i].owner_index == player_index) {
@@ -372,13 +377,13 @@ int game_sell_property(Game *g, int32_t position)
     prop_index = property_index_at(g, position);
     if (prop_index < 0) {
         (void)printf("位置 %d 没有可出售的地产。\n", position);
-        return RC_INVALID_PARAMS;
+        return RC_OK; /* 业务失败：不中断自动化流水线 */
     }
 
     prop = &g->properties[prop_index];
     if (prop->owner_index != g->current_index) {
         (void)printf("位置 %d 的地产不属于您。\n", position);
-        return RC_INVALID_PARAMS;
+        return RC_OK; /* 业务失败：不中断自动化流水线 */
     }
 
     price = property_sell_price(g, prop);

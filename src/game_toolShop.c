@@ -378,15 +378,21 @@ static int place_board_item(Game *g, ItemKind kind, int32_t offset)
     }
 
     count = item_count(player, kind);
-    if (count == NULL || *count <= 0 ||
-        g->board_item_count < 0 ||
+    if (count == NULL || *count <= 0) {
+        (void)printf("没有可用的%s，放置失败。\n",
+                     kind == ITEM_BLOCK ? "路障" :
+                     kind == ITEM_BOMB ? "炸弹" : "道具");
+        return RC_OK; /* 业务失败：不中断自动化 Action 流水线 */
+    }
+    if (g->board_item_count < 0 ||
         g->board_item_count >= MAX_BOARD_ITEMS) {
         return -RC_INVALID_PARAMS;
     }
 
     target = normalize_position((int32_t)player->position + offset);
     if (board_item_index_at(g, target) >= 0) {
-        return -RC_INVALID_PARAMS;
+        (void)printf("目标位置 %d 已有道具，无法再放置。\n", target);
+        return RC_OK; /* 规范 12.2：同一位置只能放一个道具 */
     }
 
     insert_at = g->board_item_count;
@@ -423,7 +429,8 @@ int game_robot(Game *g)
         return rc;
     }
     if (player->items.ROBOT <= 0) {
-        return -RC_INVALID_PARAMS;
+        (void)printf("没有机器娃娃，无法使用。\n");
+        return RC_OK; /* 业务失败：状态不变，继续等待命令 */
     }
 
     for (read_index = 0; read_index < g->board_item_count; ++read_index) {

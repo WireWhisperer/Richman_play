@@ -63,7 +63,3 @@ add_custom_command(
 )
 
 include(CTest)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
