@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "console.h"
 #include "game.h"
@@ -71,17 +72,19 @@ static int load_map_with_fallback(Game *game)
 
 static int path_is_file(const char *path)
 {
-    FILE *fp;
+    struct stat st;
 
     if (path == NULL || path[0] == '\0') {
         return 0;
     }
-    fp = fopen(path, "rb");
-    if (fp == NULL) {
+    if (stat(path, &st) != 0) {
         return 0;
     }
-    fclose(fp);
-    return 1;
+#ifdef _WIN32
+    return (st.st_mode & _S_IFMT) == _S_IFREG;
+#else
+    return S_ISREG(st.st_mode);
+#endif
 }
 
 static int run_automated_tests(int argc, char **argv)
