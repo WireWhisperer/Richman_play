@@ -1,82 +1,137 @@
+/**
+ * @file main.c
+ * @brief Program entry point.
+ *
+ *   rich_demo.exe              手动对局
+ *   rich_demo.exe test [dir]   运行自动化测试（默认 testcases/）
+ */
+
+#include <stdio.h>
 #include <string.h>
+
+#include "console.h"
 #include "game.h"
 #include "manual_ui.h"
+#include "path_utils.h"
+#include "player_setup.h"
+#include "test_runner.h"
 
-/**
- * main.c —— 程序入口
- *
- * 在调用 game.h 中的各函数之前，先对其所依赖的全部结构体进行初始化：
- *   - Game      ：全局游戏状态
- *   - MapCell   ：地图格（Game.cells[]）
- *   - PLAYER    ：玩家（Game.players[]），其内含 ITEMS 背包
- *   - ITEMS     ：背包道具（BLOCK / BOMB / ROBOT）
- *   - Property  ：已购地产（Game.properties[]）
- *   - BoardItem ：地图道具（Game.board_items[]）
- */
-int main(void)
+static int try_load_map(Game *game, const char *path)
 {
-    /* ===== Game：全局游戏状态 ===== */
+    if (path == NULL || path[0] == '\0') {
+        return RC_INVALID_MAP;
+    }
+
+    return game_load_map(game, path);
+}
+
+static int load_map_with_fallback(Game *game)
+{
+    char exe_dir[512];
+    char map_path[768];
+
+    if (path_get_exe_dir(exe_dir, sizeof(exe_dir)) == 0) {
+        static const char *const exe_relative_maps[] = {
+            "map.json",
+            "spec/map.json",
+            "../spec/map.json",
+            "../map.json",
+        };
+        size_t index;
+
+        for (index = 0U;
+             index < sizeof(exe_relative_maps) / sizeof(exe_relative_maps[0]);
+             ++index) {
+            if (path_join(map_path, sizeof(map_path), exe_dir,
+                          exe_relative_maps[index]) == 0 &&
+                try_load_map(game, map_path) == RC_OK) {
+                return RC_OK;
+            }
+        }
+    }
+
+    {
+        static const char *const cwd_maps[] = {
+            "spec/map.json",
+            "map.json",
+            "../spec/map.json",
+            "../map.json",
+        };
+        size_t index;
+
+        for (index = 0U; index < sizeof(cwd_maps) / sizeof(cwd_maps[0]); ++index) {
+            if (try_load_map(game, cwd_maps[index]) == RC_OK) {
+                return RC_OK;
+            }
+        }
+    }
+
+    return RC_INVALID_MAP;
+}
+
+static int run_automated_tests(int argc, char **argv)
+{
+    const char *dir = "testcases";
+    const char *results = "results";
+    int failures;
+
+    if (argc >= 3) {
+        dir = argv[2];
+    }
+
+    console_init();
+    printf("Running automated tests from: %s\n", dir);
+    failures = runner_run_dir(dir, results);
+    if (failures < 0) {
+        return 2;
+    }
+    return failures == 0 ? 0 : 1;
+}
+
+static int run_manual_game(void)
+{
     Game game;
+    PlayerSetupStatus status;
+    int rc;
 
-    /* 先整体清零，保证所有成员（含嵌套数组）初始为 0 */
-    memset(&game, 0, sizeof(game));
-
-    /* ===== MapCell：地图格（共 MAP_SIZE 格） ===== */
-    game.map_file[0] = '\0';          /* 尚未加载地图 */
-    for (int32_t i = 0; i < MAP_SIZE; i++) {
-        MapCell *cell = &game.cells[i];
-        cell->type         = CELL_START;
-        cell->price        = 0;
-        cell->upgrade_cost = 0;
-        cell->mine_points  = 0;
+    console_init();
+    game_init(&game);
+    status = player_setup_run(&game, stdin, stdout);
+    if (status == PLAYER_SETUP_QUIT) {
+        console_pause_before_exit();
+        return 0;
+    }
+    if (status != PLAYER_SETUP_OK) {
+        (void)fprintf(
+            stderr,
+            "玩家设置失败：%s\n",
+            player_setup_status_name(status)
+        );
+        console_pause_before_exit();
+        return (int)status;
     }
 
-    /* ===== PLAYER：玩家（含 ITEMS 背包），未加载 Preset 前无玩家 ===== */
-    game.user_count    = 0;
-    game.current_index = -1;          /* 无当前玩家 */
-    for (int32_t i = 0; i < MAX_PLAYERS; i++) {
-        PLAYER *p = &game.players[i];
-        p->id                   = '?';
-        p->fund                 = 0;
-        p->credit               = 0;
-        p->position             = 0;
-        p->status               = NORMAL;
-        p->remaining_rounds     = 0;
-        p->items.BLOCK          = 0;
-        p->items.BOMB           = 0;
-        p->items.ROBOT          = 0;
-        p->god_of_wealth_rounds = 0;
+    if (load_map_with_fallback(&game) != RC_OK) {
+        (void)fprintf(
+            stderr,
+            "地图加载失败: %s\n"
+            "请确认可执行文件同目录下有 map.json。\n",
+            game_last_error()
+        );
+        console_pause_before_exit();
+        return 2;
     }
 
-    /* ===== Property：已购地产（动态数组） ===== */
-    game.property_count = 0;
-    for (int32_t i = 0; i < MAX_BOARD_ITEMS; i++) {
-        game.properties[i].position    = -1;   /* 无效位置 */
-        game.properties[i].owner_index = -1;   /* 无人拥有 */
-        game.properties[i].level       = 0;    /* 空地 */
+    rc = manual_ui_run(&game);
+    console_pause_before_exit();
+    return rc;
+}
+
+int main(int argc, char **argv)
+{
+    if (argc >= 2 &&
+        (strcmp(argv[1], "test") == 0 || strcmp(argv[1], "--test") == 0)) {
+        return run_automated_tests(argc, argv);
     }
-
-    /* ===== BoardItem：地图道具（动态数组） ===== */
-    game.board_item_count = 0;
-    for (int32_t i = 0; i < MAX_BOARD_ITEMS; i++) {
-        game.board_items[i].position = -1;
-        game.board_items[i].kind     = ITEM_BLOCK;
-    }
-
-    /* ===== 预置骰子序列 ===== */
-    game.dice_count = 0;
-    game.dice_next  = 0;
-    for (int32_t i = 0; i < MAX_DICE_SEQ; i++) {
-        game.dice_seq[i] = 0;
-    }
-
-    /* ===== 阶段 / 状态 / 结果 ===== */
-    game.phase        = PHASE_COMMAND;
-    game.status       = GAME_RUNNING;
-    game.prompt       = PROMPT_NONE;
-    game.winner_index = -1;
-    game.quit         = false;
-
-    /* 初始化完成后，即可调用 game.h 中声明的游戏函数（如 game_load_map / game_reset 等） */
-    return 0;
+    return run_manual_game();
 }

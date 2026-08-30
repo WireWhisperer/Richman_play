@@ -1,4 +1,5 @@
 build/
+CMakeUserPresets.json
 build-*/
 *.exe
 *.obj
@@ -12,3 +13,11 @@ CMakeCache.txt
 CTestTestfile.cmake
 Testing/
 cmake_install.cmake
+
+results/
+dist/
+_recover/
+
+
+results/
+

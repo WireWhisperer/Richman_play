@@ -1,54 +1,136 @@
 #include "game.h"
 
-int game_move_to(Game *g, int32_t steps, int8_t last_position) /* 逐格移动+途中道具触发，返回最终落点 */
+#include <stdio.h>
+
+void get_rent(Game *g, Property prop)
 {
-    int i;
-    for (i = 0; i <= MAX_BOARD_ITEMS; i++)
-    {
-        if(g->board_items[i].position < last_position)
-            continue;
-        if (g->board_items[i].position > last_position)
-        {
-            if (g->board_items[i].position <= g->players[g->current_index].position)
-                game_boarditem_suc(g, g->board_items[i], i);
-            else
-                game_settle_landing(g);
+    PLAYER *tenant;
+    PLAYER *owner;
+    const Property *land;
+    int32_t rent;
+
+    if (g == NULL) {
+        return;
+    }
+
+    tenant = game_current_player(g);
+    if (tenant == NULL || tenant->status != NORMAL) {
+        return;
+    }
+
+    if (tenant->god_of_wealth_rounds > 0) {
+        (void)printf("财神护佑，本次免过路费。\n");
+        return;
+    }
+
+    land = game_property_at(g, prop.position);
+    if (land == NULL || land->owner_index < 0 ||
+        land->owner_index >= g->user_count) {
+        return;
+    }
+
+    if (land->owner_index == g->current_index) {
+        return;
+    }
+
+    owner = &g->players[land->owner_index];
+    if (owner->status == HOSPITAL || owner->status == IMPRISONED) {
+        (void)printf("业主正在医院/监狱，本次免过路费。\n");
+        return;
+    }
+
+    rent = property_rent(g, land);
+    tenant->fund -= rent;
+    owner->fund += rent;
+    (void)printf(
+        "经过业主 %c 的地产，支付过路费 %d 元，当前拥有资金 %d 元。\n",
+        owner->id,
+        rent,
+        tenant->fund
+    );
+
+    if (tenant->fund < 0) {
+        (void)printf("玩家 %c 资金不足，宣告破产！\n", tenant->id);
+        game_bankrupt_player(g, g->current_index);
+        game_check_finish(g);
+    }
+}
+
+static int board_item_index(const Game *g, int32_t position)
+{
+    int index;
+
+    for (index = 0; index < g->board_item_count; ++index) {
+        if (g->board_items[index].position == position) {
+            return index;
         }
     }
+
+    return -1;
 }
 
-void game_boarditem_suc(Game *g, BoardItem b, int8_t index)   /*道具生效判定*/
+int game_move_to(Game *g, int32_t steps, int8_t last_position)
 {
-    if(b.kind == ITEM_BOMB)
-    {
-        g->players[g->current_index].position = HOSPITAL_POS;  //玩家位置更新到医院
-        g->players[g->current_index].status = HOSPITAL;        //玩家状态更新为住院
-        game_remove_board_item(g, index);
-        //此处缺少一个住院处理轮空函数
+    int32_t step_index;
+    int8_t position = last_position;
+
+    if (g == NULL || g->current_index < 0 ||
+        g->current_index >= g->user_count) {
+        return -1;
     }
-    else if(b.kind == ITEM_BLOCK)
-    {
-        g->players[g->current_index].position = b.position;
-        game_remove_board_item(g, index);
-        printf("您已被路障阻隔在%d处！\n", b.position);
-        game_settle_landing(g);
+
+    for (step_index = 0; step_index < steps; ++step_index) {
+        int item_index;
+
+        position = (int8_t)((position + 1) % MAP_SIZE);
+        g->players[g->current_index].position = position;
+
+        item_index = board_item_index(g, position);
+        if (item_index >= 0) {
+            game_boarditem_suc(g, &g->board_items[item_index], (int8_t)item_index);
+            /* 路障拦截或炸弹送医后停止继续前进 */
+            break;
+        }
     }
+
+    return position;
 }
 
-void game_remove_board_item(Game *g, int index)         //清除道具
+void game_boarditem_suc(Game *g, BoardItem *b, int8_t index)
 {
-    int i;
+    PLAYER *player;
 
-    // 参数检查
-    if (index < 0 || index >= g->board_item_count)
+    if (g == NULL || b == NULL) {
         return;
-
-    // 后面的元素前移
-    for (i = index; i < g->board_item_count - 1; i++)
-    {
-        g->board_items[i] = g->board_items[i + 1];
     }
 
-    // 有效数量减少
+    player = &g->players[g->current_index];
+
+    if (b->kind == ITEM_BOMB) {
+        player->position = HOSPITAL_POS;
+        player->status = HOSPITAL;
+        player->remaining_rounds = HOSPITAL_ROUNDS;
+        game_remove_board_item(g, index);
+        (void)printf("您踩到炸弹，被送往医院，需住院 %d 天！\n",
+                     HOSPITAL_ROUNDS);
+    } else if (b->kind == ITEM_BLOCK) {
+        player->position = (int8_t)b->position;
+        game_remove_board_item(g, index);
+        (void)printf("您已被路障阻隔在%d处！\n", b->position);
+    }
+}
+
+void game_remove_board_item(Game *g, int index)
+{
+    int item_index;
+
+    if (g == NULL || index < 0 || index >= g->board_item_count) {
+        return;
+    }
+
+    for (item_index = index; item_index < g->board_item_count - 1; ++item_index) {
+        g->board_items[item_index] = g->board_items[item_index + 1];
+    }
+
     g->board_item_count--;
 }

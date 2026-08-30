@@ -1,0 +1,246 @@
+{
+  "schema_version": "1.0",
+  "user_story": "US12",
+  "tests": [
+    {
+      "case_id": "TC-US12-001",
+      "case_name": "到达矿地64获得60点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 100, "position": 63, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 160, "position": 64}]
+      }
+    },
+    {
+      "case_id": "TC-US12-002",
+      "case_name": "到达矿地65获得80点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 100, "position": 64, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 180, "position": 65}]
+      }
+    },
+    {
+      "case_id": "TC-US12-003",
+      "case_name": "到达矿地66获得40点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 100, "position": 65, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 140, "position": 66}]
+      }
+    },
+    {
+      "case_id": "TC-US12-004",
+      "case_name": "到达矿地67获得100点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 100, "position": 66, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 200, "position": 67}]
+      }
+    },
+    {
+      "case_id": "TC-US12-005",
+      "case_name": "到达矿地68获得80点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 100, "position": 67, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 180, "position": 68}]
+      }
+    },
+    {
+      "case_id": "TC-US12-006",
+      "case_name": "到达矿地69获得20点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 100, "position": 68, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 120, "position": 69}]
+      }
+    },
+    {
+      "case_id": "TC-US12-007",
+      "case_name": "到达普通地产不加点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 100, "position": 0, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 100, "position": 1}]
+      }
+    },
+    {
+      "case_id": "TC-US12-008",
+      "case_name": "经过起点不加点",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 100, "position": 68, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 2}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 100, "position": 0}]
+      }
+    },
+    {
+      "case_id": "TC-US12-009",
+      "case_name": "大点数累加不溢出",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 999999900, "position": 66, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 1000000000, "position": 67}]
+      }
+    },
+    {
+      "case_id": "TC-US12-010",
+      "case_name": "矿地64初始零点点数正确",
+      "map_file": "map.json",
+      "preset": {
+        "users": ["A", "Q"],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "players": [
+          {"id": "A", "fund": 1000, "credit": 0, "position": 63, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0},
+          {"id": "Q", "fund": 1000, "credit": 0, "position": 20, "status": "NORMAL", "remaining_rounds": 0, "items": {"BLOCK": 0, "BOMB": 0, "ROBOT": 0}, "god_of_wealth_rounds": 0}
+        ],
+        "properties": [],
+        "map_items": [],
+        "dice_sequence": []
+      },
+      "actions": [
+        {"command": "STEP", "params": {"steps": 1}}
+      ],
+      "expected": {
+        "players": [{"id": "A", "credit": 60, "position": 64}]
+      }
+    }
+  ]
+}

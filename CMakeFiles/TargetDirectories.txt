@@ -1,3 +1,0 @@
-/home/luo_k/Richman_Play/CMakeFiles/Richman_Play.dir
-/home/luo_k/Richman_Play/CMakeFiles/edit_cache.dir
-/home/luo_k/Richman_Play/CMakeFiles/rebuild_cache.dir
