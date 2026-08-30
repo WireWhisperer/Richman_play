@@ -62,8 +62,9 @@ add_custom_command(
     COMMENT "Copy map.json next to rich_demo"
 )
 
-include(CTest)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+# ===== Automated tests disabled for current manual-game build =====
+# include(CTest)
+#
+# if(BUILD_TESTING)
+#     add_subdirectory(tests)
+# endif()

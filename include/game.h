@@ -236,4 +236,8 @@ int tool_shop_enter(Game *g, char *message, size_t message_size);
 int tool_shop_answer(Game *g, const char *input,
                      char *message, size_t message_size);
 
+static const char *player_status_text(PLAYER_STATUS status);
+static void print_player_info_line(const Game *g, int32_t index);
+static void print_player_panel_line(const Game *g, int row);
+
 #endif /* RICH_GAME_H */

@@ -87,11 +87,13 @@ int gift_shop_answer(Game *g, const char *input,
     }
 
     cursor = (const unsigned char *)input;
-    while (*cursor != '\0' && isspace(*cursor)) {
+    while (*cursor != '\0' && isspace(*cursor))
+    {
         ++cursor;
     }
 
-    if (*cursor < '1' || *cursor > '3') {
+    if (*cursor < '1' || *cursor > '3')
+    {
         close_gift_shop(g);
         write_message(message, message_size,
                       "输入无效，视为放弃礼品，已离开礼品屋。");
@@ -99,6 +101,23 @@ int gift_shop_answer(Game *g, const char *input,
     }
 
     choice = (int32_t)(*cursor - '0');
+    ++cursor;
+
+    /* 允许数字后面只有空格 */
+    while (*cursor != '\0' && isspace(*cursor))
+    {
+        ++cursor;
+    }
+
+    /* 还有其他字符，视为错误输入 */
+    if (*cursor != '\0')
+    {
+        close_gift_shop(g);
+        write_message(message, message_size,
+                      "输入无效，视为放弃礼品，已离开礼品屋。");
+        return RC_OK;
+    }
+
     close_gift_shop(g);
 
     switch (choice) {
