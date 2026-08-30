@@ -431,8 +431,12 @@ int manual_ui_run(Game *g)
             break;   /* QUIT */
         }
         if (rc != RC_OK) {
-            ResultCode code = (ResultCode)(rc < 0 ? -rc : rc);
-            printf("错误(%s): %s\n", result_code_name(code), game_last_error());
+            const char *msg = game_last_error();
+            if (msg != NULL && msg[0] != '\0') {
+                printf("%s\n", msg);
+            } else {
+                printf("操作无效，请输入 HELP 查看可用命令。\n");
+            }
         }
     }
     return RC_OK;

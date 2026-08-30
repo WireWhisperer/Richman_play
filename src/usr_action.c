@@ -6,6 +6,7 @@
 static int skip_confined_turn(Game *g)
 {
     PLAYER *player;
+    const char *status_cn;
 
     if (g == NULL) {
         return 0;
@@ -20,11 +21,13 @@ static int skip_confined_turn(Game *g)
         return 0;
     }
 
-    if (player->status == HOSPITAL) {
-        RICH_PRINTF("玩家 %c 正在住院，本回合无法行动。\n", player->id);
-    } else {
-        RICH_PRINTF("玩家 %c 正在监狱中，本回合无法行动。\n", player->id);
-    }
+    status_cn = (player->status == HOSPITAL) ? "住院" : "监狱";
+    RICH_PRINTF(
+        "当前玩家 %c：状态 %s，剩余轮数 %d，本回合无法行动。\n",
+        player->id,
+        status_cn,
+        (int)player->remaining_rounds
+    );
 
     player->remaining_rounds--;
     if (player->remaining_rounds <= 0) {

@@ -857,6 +857,8 @@ int game_query(const Game *g, char *buf, size_t bufsz)
     for (index = 0; index < g->property_count; ++index) {
         const Property *prop = &g->properties[index];
         const char *level_name;
+        int32_t house_price;
+        int32_t rent_price;
         int32_t sell_price;
 
         if (prop->owner_index != g->current_index) {
@@ -870,15 +872,18 @@ int game_query(const Game *g, char *buf, size_t bufsz)
         default: level_name = "空地"; break;
         }
 
+        house_price = property_total_invest(g, prop);
+        rent_price = property_rent(g, prop);
         sell_price = property_sell_price(g, prop);
         offset += (size_t)snprintf(
             buf + offset,
             bufsz > offset ? bufsz - offset : 0,
-            "  位置 %d，%s，出售价 %d 元（命令：SELL %d）\n",
+            "  位置 %d，%s，房价 %d 元，收租 %d 元，出售价 %d 元\n",
             prop->position,
             level_name,
-            sell_price,
-            prop->position
+            house_price,
+            rent_price,
+            sell_price
         );
         ++owned_count;
     }
@@ -994,32 +999,69 @@ void game_settle_landing(Game *g)
 void game_next_turn(Game *g)
 {
     /* 规范 4.3 回合切换：
-       BANKRUPT 不再获得回合；HOSPITAL/JAIL 轮空一次并减 remaining_rounds，
-       最后一次轮空后恢复 NORMAL，下次轮到才能行动。 */
+       BANKRUPT 不再获得回合；HOSPITAL/JAIL 轮空并提示状态/剩余轮数后跳过，
+       最后一次轮空后恢复 NORMAL，下次轮到才能行动。
+       若连续多名玩家受限，按行动次序逐行提示，直到找到可行动玩家。 */
+    int32_t idx;
+    int32_t safety;
+    int32_t i;
+
     if (g->phase == PHASE_ENDED) {
         return;
     }
     g->phase = PHASE_COMMAND;
     g->prompt = PROMPT_NONE;
 
-    int32_t idx = g->current_index;
-    for (int32_t i = 0; i < g->user_count; i++) {
+    if (g->user_count <= 0) {
+        game_check_finish(g);
+        return;
+    }
+
+    idx = g->current_index;
+    /* 最多绕行若干圈，覆盖全员住院/监狱的极端情况 */
+    safety = g->user_count * (HOSPITAL_ROUNDS + JAIL_ROUNDS + 2);
+    if (safety < g->user_count) {
+        safety = g->user_count;
+    }
+
+    for (i = 0; i < safety; ++i) {
+        PLAYER *p;
+
         idx = (idx + 1) % g->user_count;
-        PLAYER *p = &g->players[idx];
+        p = &g->players[idx];
         if (p->status == BANKRUPT) {
             continue;
         }
         if (p->status == HOSPITAL || p->status == IMPRISONED) {
+            const char *status_cn =
+                (p->status == HOSPITAL) ? "住院" : "监狱";
+
+            RICH_PRINTF(
+                "当前玩家 %c：状态 %s，剩余轮数 %d，本回合无法行动。\n",
+                p->id,
+                status_cn,
+                (int)p->remaining_rounds
+            );
+
             p->remaining_rounds--;
+            if (p->god_of_wealth_rounds > 0) {
+                --p->god_of_wealth_rounds;   /* 轮空消耗财神回合 */
+            }
             if (p->remaining_rounds <= 0) {
                 p->status = NORMAL;
                 p->remaining_rounds = 0;
+                RICH_PRINTF(
+                    "玩家 %c 已恢复自由，下次轮到时可以行动。\n",
+                    p->id
+                );
             }
-            continue;   /* 本轮空 */
+            continue;   /* 本轮空，继续找下一位 */
         }
+
         g->current_index = idx;
         return;
     }
+
     /* 所有玩家都无法行动：正常情况 game_check_finish 已先行触发结束 */
     game_check_finish(g);
 }
