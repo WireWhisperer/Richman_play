@@ -210,7 +210,7 @@ static int is_quit_command(const char *text)
 }
 
 /** 启动时提示输入初始资金：空行使用默认值，越界则重新输入；QUIT 退出。返回 1 表示退出。 */
-static int prompt_initial_fund(Game *g, int32_t *initial_fund)
+int manual_ui_prompt_initial_fund(Game *g, int32_t *initial_fund)
 {
     char line[256];
 
@@ -370,19 +370,7 @@ static void print_command_prompt(const Game *g)
 
 int manual_ui_run(Game *g)
 {
-    int32_t initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
-
     console_init();
-
-    if (prompt_initial_fund(g, &initial_fund)) {
-        return RC_OK;
-    }
-    int setup_rc = game_apply_initial_fund(g, initial_fund);
-    if (setup_rc != RC_OK) {
-        fprintf(stderr, "游戏初始化失败: %s\n", game_last_error());
-        return setup_rc;
-    }
-    game_print("初始资金已设为 %d。\n", initial_fund);
 
     char line[256];
     for (;;) {

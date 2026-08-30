@@ -20,4 +20,13 @@
  */
 int manual_ui_run(Game *g);
 
+/**
+ * 提示输入初始资金：空行使用默认值，越界则重新输入；输入 QUIT 返回 1。
+ * 本函数不修改游戏状态，资金由调用方在玩家选择完成后应用。
+ * @param g             游戏对象（仅用于 QUIT 时结束状态）
+ * @param initial_fund  输出选定的初始资金
+ * @return 0 已选定；1 用户输入 QUIT
+ */
+int manual_ui_prompt_initial_fund(Game *g, int32_t *initial_fund);
+
 #endif /* RICH_MANUAL_UI_H */

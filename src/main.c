@@ -116,10 +116,19 @@ static int run_manual_game(void)
 {
     Game game;
     PlayerSetupStatus status;
+    int32_t initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
     int rc;
 
     console_init();
     game_init(&game);
+
+    /* 1. 先设置初始资金 */
+    if (manual_ui_prompt_initial_fund(&game, &initial_fund)) {
+        console_pause_before_exit();
+        return 0;
+    }
+
+    /* 2. 再选择人数与角色 */
     status = player_setup_run(&game, stdin, stdout);
     if (status == PLAYER_SETUP_QUIT) {
         console_pause_before_exit();
@@ -135,6 +144,16 @@ static int run_manual_game(void)
         return (int)status;
     }
 
+    /* 3. 应用初始资金（需要玩家已选好） */
+    rc = game_apply_initial_fund(&game, initial_fund);
+    if (rc != RC_OK) {
+        (void)fprintf(stderr, "游戏初始化失败: %s\n", game_last_error());
+        console_pause_before_exit();
+        return 2;
+    }
+    game_print("初始资金已设为 %d。\n", initial_fund);
+
+    /* 4. 加载地图 */
     if (load_map_with_fallback(&game) != RC_OK) {
         (void)fprintf(
             stderr,
