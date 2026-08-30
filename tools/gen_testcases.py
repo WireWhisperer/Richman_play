@@ -22,13 +22,13 @@ def P(id, fund=1000, credit=0, pos=0, status="NORMAL", rr=0, items=(0, 0, 0), go
             "items": {"BLOCK": items[0], "BOMB": items[1], "ROBOT": items[2]},
             "god_of_wealth_rounds": god}
 
-def PR(players, users=None, current="A", properties=None, map_items=None):
+def PR(players, users=None, current="A", properties=None, map_items=None, dice=None):
     if users is None:
         users = [p["id"] for p in players]
     return {"users": users, "current_user": current, "phase": "COMMAND",
             "game_status": "RUNNING", "players": players,
             "properties": properties or [], "map_items": map_items or [],
-            "dice_sequence": []}
+            "dice_sequence": dice or []}
 
 def PROP(pos, owner, level):
     return {"position": pos, "owner": owner, "level": level}
@@ -698,6 +698,122 @@ NEW.append(C("TC-NOUS-002", "起点上的炸弹按途中规则触发",
     {"current_user": "Q",
      "players": [{"id": "A", "position": 14, "status": "HOSPITAL", "remaining_rounds": 3}],
      "map_items_absent": [0]}))
+
+# ================= 补充：跨回合链路 / 提示断言 / 负向边界 =================
+
+# 1. 跨回合道具链路：放置 -> 对方触发
+NEW.append(C("TC-US17-019", "放置路障后对方走到被拦截并处理落点",
+    PR([P("A", pos=13, items=(1, 0, 0)), P("Q", pos=20)]),
+    [A("BLOCK", offset=8), A("STEP", steps=1), A("STEP", steps=1), ANS("N")],
+    {"current_user": "A",
+     "players": [{"id": "Q", "position": 21}, {"id": "A", "position": 14}],
+     "map_items_absent": [21], "properties_absent": [21]}))
+NEW.append(C("TC-US18-014", "放置炸弹后对方走到被炸送医",
+    PR([P("A", pos=13, items=(0, 1, 0)), P("Q", pos=20)]),
+    [A("BOMB", offset=8), A("STEP", steps=1), A("STEP", steps=1)],
+    {"current_user": "A",
+     "players": [{"id": "Q", "position": 14, "status": "HOSPITAL", "remaining_rounds": 3},
+                 {"id": "A", "position": 14}],
+     "map_items_absent": [21]}))
+
+# 2. 连续 ROLL 骰子序列按序消耗
+NEW.append(C("TC-US07-012", "连续回合ROLL按序消耗骰子序列",
+    PR([P("A", pos=13), P("Q", pos=20)], dice=[3, 5]),
+    [A("ROLL"), ANS("N"), A("ROLL"), ANS("N")],
+    {"current_user": "A",
+     "players": [{"id": "A", "position": 16}, {"id": "Q", "position": 25}],
+     "properties_absent": [16, 25]}))
+
+# 3. 财神完整5轮周期
+NEW.append(C("TC-US22-011", "财神5轮内均免租第6轮恢复收费",
+    PR([P("A", pos=0), P("Q", pos=34)], current="Q",
+       properties=[PROP(1, "A", 0), PROP(2, "A", 0), PROP(3, "A", 0),
+                   PROP(4, "A", 0), PROP(5, "A", 0), PROP(6, "A", 0)]),
+    [A("STEP", steps=1), ANS("3"),
+     A("STEP", steps=70), A("STEP", steps=36),
+     A("STEP", steps=70), A("STEP", steps=1),
+     A("STEP", steps=70), A("STEP", steps=1),
+     A("STEP", steps=70), A("STEP", steps=1),
+     A("STEP", steps=70), A("STEP", steps=1),
+     A("STEP", steps=70), A("STEP", steps=1)],
+    {"current_user": "A",
+     "players": [{"id": "Q", "position": 6, "fund": 900, "god_of_wealth_rounds": 0},
+                 {"id": "A", "fund": 1100}]}))
+
+# 4. 四玩家局边界
+NEW.append(C("TC-US13-009", "四玩家局连续两个入狱玩家被跳过",
+    PR([P("A", pos=13), P("Q", pos=49, status="JAIL", rr=2),
+        P("S", pos=49, status="JAIL", rr=2), P("J", pos=20)],
+       users=["A", "Q", "S", "J"]),
+    [A("STEP", steps=1)],
+    {"current_user": "J",
+     "players": [{"id": "Q", "status": "JAIL", "remaining_rounds": 1},
+                 {"id": "S", "status": "JAIL", "remaining_rounds": 1},
+                 {"id": "A", "position": 14}]}))
+NEW.append(C("TC-US07-013", "四玩家同格显示当前玩家",
+    PR([P("A", pos=5), P("Q", pos=5), P("S", pos=5), P("J", pos=5)],
+       users=["A", "Q", "S", "J"], current="J"),
+    [],
+    {"display_players": [{"position": 5, "visible_user": "J"}]}))
+
+# 5. 特殊格上的道具优先级
+NEW.append(C("TC-US18-013", "炸弹在监狱上踩到送医而非入狱",
+    PR([P("A", pos=48), P("Q", pos=40)], map_items=[ITEM(49, "BOMB")]),
+    [A("STEP", steps=1)],
+    {"current_user": "Q",
+     "players": [{"id": "A", "position": 14, "status": "HOSPITAL", "remaining_rounds": 3}],
+     "map_items_absent": [49]}))
+NEW.append(C("TC-US17-020", "路障拦在道具屋仍进入道具屋",
+    PR([P("A", pos=27, credit=50), P("Q", pos=40)], map_items=[ITEM(28, "BLOCK")]),
+    [A("STEP", steps=1), ANS("F")],
+    {"current_user": "Q", "phase": "COMMAND",
+     "players": [{"id": "A", "position": 28, "credit": 50}],
+     "map_items_absent": [28]}))
+
+# 6. 多轮集成长链
+NEW.append(C("TC-NOUS-003", "买地升级收租破产到结束的完整链路",
+    PR([P("A", pos=0), P("Q", fund=100, pos=10)], current="A"),
+    [A("STEP", steps=1), ANS("Y"),
+     A("STEP", steps=1), ANS("N"),
+     A("STEP", steps=70), ANS("Y"),
+     A("STEP", steps=60)],
+    {"game_status": "FINISHED", "phase": "ENDED", "winner": "A",
+     "players": [{"id": "Q", "fund": 0, "status": "BANKRUPT"},
+                 {"id": "A", "fund": 800, "position": 1}],
+     "properties": [PROP(1, "A", 1)]}))
+
+# 7. pending_prompt 正面断言
+NEW.append(C("TC-US04-006", "停在空地时待处理提示为BUY",
+    PR([P("A", pos=0), P("Q", pos=40)]),
+    [A("STEP", steps=1)],
+    {"current_user": "A", "phase": "PROMPT", "pending_prompt": "BUY"}))
+NEW.append(C("TC-US11-010", "停在自己地产时待处理提示为UPGRADE",
+    PR([P("A", pos=0), P("Q", pos=40)], properties=[PROP(1, "A", 0)]),
+    [A("STEP", steps=1)],
+    {"current_user": "A", "phase": "PROMPT", "pending_prompt": "UPGRADE"}))
+NEW.append(C("TC-US16-013", "停在道具屋时待处理提示为TOOL_SHOP",
+    PR([P("A", pos=27, credit=50), P("Q", pos=40)]),
+    [A("STEP", steps=1)],
+    {"current_user": "A", "phase": "PROMPT", "pending_prompt": "TOOL_SHOP"}))
+NEW.append(C("TC-US21-007", "停在礼品屋时待处理提示为GIFT_SHOP",
+    PR([P("A", pos=34), P("Q", pos=40)]),
+    [A("STEP", steps=1)],
+    {"current_user": "A", "phase": "PROMPT", "pending_prompt": "GIFT_SHOP"}))
+
+# 8. BUY/UPGRADE 非法回答负向（按规则文档34.3应报参数错误）
+NEW.append(C("TC-US09-011", "购买提示非法回答应报参数错误",
+    PR([P("A", pos=0), P("Q", pos=40)]),
+    [A("STEP", steps=1), ANS("x")], {}, er="ERROR", ec="INVALID_PARAMS"))
+NEW.append(C("TC-US11-011", "升级提示非法回答应报参数错误",
+    PR([P("A", pos=0), P("Q", pos=40)], properties=[PROP(1, "A", 0)]),
+    [A("STEP", steps=1), ANS("x")], {}, er="ERROR", ec="INVALID_PARAMS"))
+
+# 9. QUIT 显式断言 winner 为 null
+NEW.append(C("TC-US24-007", "COMMAND阶段QUIT后胜者为null",
+    PR([P("A", pos=0), P("Q", pos=40)]),
+    [A("QUIT")],
+    {"game_status": "FINISHED", "phase": "ENDED", "winner": None,
+     "pending_prompt": None}))
 
 # ---------- merge ----------
 with open(SRC, encoding="utf-8") as fp:

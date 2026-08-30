@@ -759,10 +759,9 @@ static int handle_prompt_answer(Game *g, const char *value,
     }
 
     if (rc < 0) {
-        /* 道具屋/礼品屋等业务拒绝（点数不足、非法选项）仍算交互完成，
-           便于自动化继续比对状态；仅协议错误向上抛出。 */
-        if (answered == PROMPT_TOOL_SHOP || answered == PROMPT_GIFT_SHOP ||
-            answered == PROMPT_BUY || answered == PROMPT_UPGRADE) {
+        /* 道具屋/礼品屋的业务拒绝（点数不足、非法选项）仍算交互完成；
+           购买/升级提示的非法回答必须返回参数错误（规范 34.3）。 */
+        if (answered == PROMPT_TOOL_SHOP || answered == PROMPT_GIFT_SHOP) {
             return RC_OK;
         }
         return rc;
