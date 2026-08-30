@@ -122,6 +122,119 @@ static void print_band_cell(const Game *g, int32_t pos)
     printf("%s%c\033[0m", ansi_of(c), m);
 }
 
+/** 玩家状态转中文说明。 */
+static const char *player_status_text(PLAYER_STATUS status)
+{
+    switch (status) {
+    case NORMAL:
+        return "正常";
+    case HOSPITAL:
+        return "住院";
+    case BANKRUPT:
+        return "破产";
+    case IMPRISONED:
+        return "监狱";
+    default:
+        return "未知";
+    }
+}
+
+/** 在地图右侧输出指定玩家的一行实时信息。 */
+static void print_player_info_line(const Game *g, int32_t index)
+{
+    const PLAYER *p;
+    const PlayerSetupCharacter *character;
+    const char *name;
+    const char *current_mark;
+
+    if (g == NULL || index < 0 || index >= g->user_count) {
+        return;
+    }
+
+    p = &g->players[index];
+    character = player_setup_character_by_id(p->id);
+    name = (character != NULL) ? character->name : "未知玩家";
+    current_mark = (index == g->current_index && p->status != BANKRUPT) ? ">" : " ";
+
+    printf("%s%s %s(%c) 资金:%d 点数:%d 位置:%d 状态:%s",
+           ansi_of(player_color(p->id)),
+           current_mark,
+           name,
+           p->id,
+           (int)p->fund,
+           (int)p->credit,
+           (int)p->position,
+           player_status_text(p->status));
+
+    if (p->status == HOSPITAL || p->status == IMPRISONED) {
+        printf(" 剩余:%d回合", (int)p->remaining_rounds);
+    }
+
+    if (p->god_of_wealth_rounds > 0) {
+        printf(" 财神:%d回合", (int)p->god_of_wealth_rounds);
+    }
+
+    printf("%s", ansi_of(COL_DEF));
+}
+
+/**
+ * 输出地图某一行右侧对应的玩家面板内容。
+ * 地图总共 8 行，面板同样按 8 行组织：
+ *   0: 标题
+ *   1~4: 最多四位玩家
+ *   5: 当前行动玩家
+ *   6: 当前游戏阶段
+ *   7: 状态说明
+ */
+static void print_player_panel_line(const Game *g, int row)
+{
+    if (row == 0) {
+        printf("【玩家信息】");
+        return;
+    }
+
+    if (row >= 1 && row <= MAX_PLAYERS) {
+        int32_t index = (int32_t)(row - 1);
+
+        if (index < g->user_count) {
+            print_player_info_line(g, index);
+        }
+        return;
+    }
+
+    if (row == 5) {
+        const PLAYER *current = game_current_player_c(g);
+
+        if (current != NULL) {
+            const PlayerSetupCharacter *character =
+                player_setup_character_by_id(current->id);
+            const char *name =
+                (character != NULL) ? character->name : "未知玩家";
+
+            printf("当前玩家：%s%s(%c)%s",
+                   ansi_of(player_color(current->id)),
+                   name,
+                   current->id,
+                   ansi_of(COL_DEF));
+        } else {
+            printf("当前玩家：无");
+        }
+        return;
+    }
+
+    if (row == 6) {
+        printf("游戏阶段：%s", phase_to_str(g->phase));
+        if (g->phase == PHASE_PROMPT) {
+            printf(" / %s", prompt_to_str(g->prompt));
+        }
+        return;
+    }
+
+    if (row == 7) {
+        printf("状态：正常 / 住院 / 监狱 / 破产");
+    }
+}
+
 /**
  * 渲染完整地图（29×8 矩阵边缘，共 8 行 × 29 格，规范 3.2 顺时针）：
  *   第 0 行：0~28（左端 S 起点，右端 T 道具屋）
@@ -130,25 +243,42 @@ static void print_band_cell(const Game *g, int32_t pos)
  */
 static void render_map(const Game *g)
 {
+    const int panel_gap = 4;
+
     printf("\n");
     /* 第 0 行：上边 0~28 */
     for (int32_t p = 0; p <= 28; p++) {
         print_band_cell(g, p);
     }
+    for (int k = 0; k < panel_gap; k++) {
+        printf(" ");
+    }
+    print_player_panel_line(g, 0);
     printf("\n");
-    /* 第 1~6 行：左列 69~64，右列 29~34（中间 27 个空格对齐上下边） */
+
+    /* 第 1~6 行：左列 69~64、右列 29~34（中间 27 个空格对齐上下边） */
     for (int i = 0; i < 6; i++) {
         print_band_cell(g, 69 - i);
         for (int j = 1; j <= 27; j++) {
             printf(" ");
         }
         print_band_cell(g, 29 + i);
+
+        for (int k = 0; k < panel_gap; k++) {
+            printf(" ");
+        }
+        print_player_panel_line(g, i + 1);
         printf("\n");
     }
+
     /* 第 7 行：下边 63~35（顺时针） */
     for (int32_t p = 63; p >= 35; p--) {
         print_band_cell(g, p);
     }
+    for (int k = 0; k < panel_gap; k++) {
+        printf(" ");
+    }
+    print_player_panel_line(g, 7);
     printf("\n");
 }
 
