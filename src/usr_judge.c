@@ -19,7 +19,7 @@ void get_rent(Game *g, Property prop)
     }
 
     if (tenant->god_of_wealth_rounds > 0) {
-        (void)printf("财神护佑，本次免过路费。\n");
+        (void)game_print("财神护佑，本次免过路费。\n");
         return;
     }
 
@@ -35,14 +35,14 @@ void get_rent(Game *g, Property prop)
 
     owner = &g->players[land->owner_index];
     if (owner->status == HOSPITAL || owner->status == IMPRISONED) {
-        (void)printf("业主正在医院/监狱，本次免过路费。\n");
+        (void)game_print("业主正在医院/监狱，本次免过路费。\n");
         return;
     }
 
     rent = property_rent(g, land);
     tenant->fund -= rent;
     owner->fund += rent;
-    (void)printf(
+    (void)game_print(
         "经过业主 %c 的地产，支付过路费 %d 元，当前拥有资金 %d 元。\n",
         owner->id,
         rent,
@@ -50,7 +50,7 @@ void get_rent(Game *g, Property prop)
     );
 
     if (tenant->fund < 0) {
-        (void)printf("玩家 %c 资金不足，宣告破产！\n", tenant->id);
+        (void)game_print("玩家 %c 资金不足，宣告破产！\n", tenant->id);
         game_bankrupt_player(g, g->current_index);
         game_check_finish(g);
     }
@@ -111,12 +111,12 @@ void game_boarditem_suc(Game *g, BoardItem *b, int8_t index)
         player->status = HOSPITAL;
         player->remaining_rounds = HOSPITAL_ROUNDS;
         game_remove_board_item(g, index);
-        (void)printf("您踩到炸弹，被送往医院，需住院 %d 天！\n",
+        (void)game_print("您踩到炸弹，被送往医院，需住院 %d 天！\n",
                      HOSPITAL_ROUNDS);
     } else if (b->kind == ITEM_BLOCK) {
         player->position = (int8_t)b->position;
         game_remove_board_item(g, index);
-        (void)printf("您已被路障阻隔在%d处！\n", b->position);
+        (void)game_print("您已被路障阻隔在%d处！\n", b->position);
     }
 }
 

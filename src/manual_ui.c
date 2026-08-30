@@ -118,7 +118,7 @@ static void print_band_cell(const Game *g, int32_t pos)
     char m;
     int c;
     cell_content(g, pos, &m, &c);
-    printf("%s%c\033[0m", ansi_of(c), m);
+    game_print("%s%c\033[0m", ansi_of(c), m);
 }
 
 /**
@@ -129,26 +129,26 @@ static void print_band_cell(const Game *g, int32_t pos)
  */
 static void render_map(const Game *g)
 {
-    printf("\n");
+    game_print("\n");
     /* 第 0 行：上边 0~28 */
     for (int32_t p = 0; p <= 28; p++) {
         print_band_cell(g, p);
     }
-    printf("\n");
+    game_print("\n");
     /* 第 1~6 行：左列 69~64，右列 29~34（中间 27 个空格对齐上下边） */
     for (int i = 0; i < 6; i++) {
         print_band_cell(g, 69 - i);
         for (int j = 1; j <= 27; j++) {
-            printf(" ");
+            game_print(" ");
         }
         print_band_cell(g, 29 + i);
-        printf("\n");
+        game_print("\n");
     }
     /* 第 7 行：下边 63~35（顺时针） */
     for (int32_t p = 63; p >= 35; p--) {
         print_band_cell(g, p);
     }
-    printf("\n");
+    game_print("\n");
 }
 
 /* ==================== 输入辅助 ==================== */
@@ -221,7 +221,7 @@ static int prompt_initial_fund(Game *g, int32_t *initial_fund)
     *initial_fund = MANUAL_INITIAL_FUND_DEFAULT;
 
     for (;;) {
-        printf("请输入初始资金（%d~%d，直接回车默认 %d，输入 QUIT 退出）：",
+        game_print("请输入初始资金（%d~%d，直接回车默认 %d，输入 QUIT 退出）：",
                MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX, MANUAL_INITIAL_FUND_DEFAULT);
         fflush(stdout);
 
@@ -243,7 +243,7 @@ static int prompt_initial_fund(Game *g, int32_t *initial_fund)
         int32_t fund = 0;
         if (!parse_int_arg(s, &fund) ||
             fund < MANUAL_INITIAL_FUND_MIN || fund > MANUAL_INITIAL_FUND_MAX) {
-            printf("输入无效，请输入 %d~%d 之间的整数。\n",
+            game_print("输入无效，请输入 %d~%d 之间的整数。\n",
                    MANUAL_INITIAL_FUND_MIN, MANUAL_INITIAL_FUND_MAX);
             continue;
         }
@@ -297,7 +297,7 @@ static int dispatch(Game *g, const char *s)
         char buf[4096];
         int rc = game_query(g, buf, sizeof(buf));
         if (rc == RC_OK) {
-            printf("%s\n", buf);
+            game_print("%s\n", buf);
         }
         return rc;
     }
@@ -305,7 +305,7 @@ static int dispatch(Game *g, const char *s)
         char buf[2048];
         int rc = game_help(buf, sizeof(buf));
         if (rc == RC_OK) {
-            printf("%s\n", buf);
+            game_print("%s\n", buf);
         }
         return rc;
     }
@@ -324,23 +324,23 @@ static void print_command_prompt(const Game *g)
     if (g->phase == PHASE_PROMPT) {
         switch (g->prompt) {
         case PROMPT_BUY:
-            (void)printf("【购买】请输入 Y 购买 / N 放弃：");
+            (void)game_print("【购买】请输入 Y 购买 / N 放弃：");
             return;
         case PROMPT_UPGRADE:
-            (void)printf("【升级】请输入 Y 升级 / N 放弃：");
+            (void)game_print("【升级】请输入 Y 升级 / N 放弃：");
             return;
         case PROMPT_TOOL_SHOP:
             {
                 const PLAYER *p = game_current_player_c(g);
                 int32_t credit = p != NULL ? p->credit : 0;
-                (void)printf(
+                (void)game_print(
                     "【道具屋】请输入 1/2/3 购买，或 F 退出（当前点数 %d）：",
                     credit
                 );
             }
             return;
         case PROMPT_GIFT_SHOP:
-            (void)printf("【礼品屋】请输入 1/2/3 选择礼品：");
+            (void)game_print("【礼品屋】请输入 1/2/3 选择礼品：");
             return;
         default:
             break;
@@ -348,17 +348,17 @@ static void print_command_prompt(const Game *g)
     }
 
     if (player == NULL) {
-        (void)printf("> ");
+        (void)game_print("> ");
         return;
     }
 
     character = player_setup_character_by_id(player->id);
     if (character == NULL) {
-        (void)printf("%c> ", player->id);
+        (void)game_print("%c> ", player->id);
         return;
     }
 
-    (void)printf(
+    (void)game_print(
         "%s%s%s> ",
         ansi_of(player_color(player->id)),
         character->name,
@@ -382,7 +382,7 @@ int manual_ui_run(Game *g)
         fprintf(stderr, "游戏初始化失败: %s\n", game_last_error());
         return setup_rc;
     }
-    printf("初始资金已设为 %d。\n", initial_fund);
+    game_print("初始资金已设为 %d。\n", initial_fund);
 
     char line[256];
     for (;;) {
@@ -395,7 +395,7 @@ int manual_ui_run(Game *g)
         fflush(stdout);
 
         if (fgets(line, sizeof(line), stdin) == NULL) {
-            printf("\n（输入结束，退出）\n");
+            game_print("\n（输入结束，退出）\n");
             return RC_OK;   /* EOF：不崩溃、不死循环（规则 13） */
         }
 
@@ -415,7 +415,7 @@ int manual_ui_run(Game *g)
         }
         if (rc != RC_OK) {
             ResultCode code = (ResultCode)(rc < 0 ? -rc : rc);
-            printf("错误(%s): %s\n", result_code_name(code), game_last_error());
+            game_print("错误(%s): %s\n", result_code_name(code), game_last_error());
         }
     }
     return RC_OK;

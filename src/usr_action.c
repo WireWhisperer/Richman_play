@@ -21,16 +21,16 @@ static int skip_confined_turn(Game *g)
     }
 
     if (player->status == HOSPITAL) {
-        (void)printf("玩家 %c 正在住院，本回合无法行动。\n", player->id);
+        (void)game_print("玩家 %c 正在住院，本回合无法行动。\n", player->id);
     } else {
-        (void)printf("玩家 %c 正在监狱中，本回合无法行动。\n", player->id);
+        (void)game_print("玩家 %c 正在监狱中，本回合无法行动。\n", player->id);
     }
 
     player->remaining_rounds--;
     if (player->remaining_rounds <= 0) {
         player->status = NORMAL;
         player->remaining_rounds = 0;
-        (void)printf("玩家 %c 已恢复自由，下次轮到时可以行动。\n", player->id);
+        (void)game_print("玩家 %c 已恢复自由，下次轮到时可以行动。\n", player->id);
     }
 
     game_finish_action_turn(g);
@@ -58,7 +58,7 @@ static void print_roll_result(Game *g, int32_t steps)
         return;
     }
 
-    (void)printf(
+    (void)game_print(
         "玩家 %c 掷出 %d 点，移动至位置 %d。\n",
         player->id,
         steps,

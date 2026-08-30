@@ -173,6 +173,10 @@ int  game_start_manual(Game *g, int32_t initial_fund);  /* 手动对局开局：
 int  game_apply_preset(Game *g, const struct cJSON *preset);   /* 加载 Preset，0 成功 */
 const char *game_last_error(void);                      /* 最近一次游戏操作的错误描述 */
 
+/* ===== 静默输出（自动化测试模式） ===== */
+extern bool g_game_quiet;               /* true 时游戏内部提示不打印，仅测试模式置位 */
+void game_print(const char *fmt, ...);  /* 游戏内部统一输出入口，受 g_game_quiet 控制 */
+
 /* ===== 枚举 <-> JSON 字符串固定映射（规范 14.2） ===== */
 const char *cell_type_to_str(CellType t);
 int         cell_type_from_str(const char *s);      /* 找不到返回 -1 */

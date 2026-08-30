@@ -33,6 +33,21 @@ const char *game_last_error(void)
     return g_last_error;
 }
 
+/* 游戏内部统一输出入口：自动化测试模式下静默，保证控制台只有 PASS/FAIL 结果行 */
+bool g_game_quiet = false;
+
+void game_print(const char *fmt, ...)
+{
+    va_list ap;
+
+    if (g_game_quiet || fmt == NULL) {
+        return;
+    }
+    va_start(ap, fmt);
+    (void)vprintf(fmt, ap);
+    va_end(ap);
+}
+
 const char *result_code_name(ResultCode rc)
 {
     switch (rc) {
@@ -740,7 +755,7 @@ static int handle_prompt_answer(Game *g, const char *value,
     message[0] = '\0';
     rc = handler(g, value, message, sizeof(message));
     if (message[0] != '\0') {
-        (void)printf("%s\n", message);
+        (void)game_print("%s\n", message);
     }
 
     if (rc < 0) {
@@ -924,31 +939,31 @@ void game_settle_landing(Game *g)
     switch (g->cells[position].type) {
     case CELL_MINE:
         handle_mine_landing(g, position);
-        (void)printf("到达矿地，获得 %d 点数！\n",
+        (void)game_print("到达矿地，获得 %d 点数！\n",
                      g->cells[position].mine_points);
         break;
 
     case CELL_JAIL:
         handle_jail_landing(g);
-        (void)printf("进入监狱，需关押 %d 天！\n", JAIL_ROUNDS);
+        (void)game_print("进入监狱，需关押 %d 天！\n", JAIL_ROUNDS);
         break;
 
     case CELL_TOOL_SHOP:
         (void)tool_shop_enter(g, message, sizeof(message));
         if (message[0] != '\0') {
-            (void)printf("%s\n", message);
+            (void)game_print("%s\n", message);
         }
         break;
 
     case CELL_GIFT_SHOP:
         (void)gift_shop_enter(g, message, sizeof(message));
         if (message[0] != '\0') {
-            (void)printf("%s\n", message);
+            (void)game_print("%s\n", message);
         }
         break;
 
     case CELL_MAGIC_HOUSE:
-        (void)printf(
+        (void)game_print(
             "欢迎来到魔法屋！魔法效果尚未开放，欢迎参观。\n"
         );
         break;
@@ -1014,12 +1029,12 @@ void game_check_finish(Game *g)
         }
     }
     if (g->winner_index >= 0) {
-        (void)printf(
+        (void)game_print(
             "\n游戏结束！获胜者：玩家 %c（资金 %d 元）\n",
             g->players[g->winner_index].id,
             g->players[g->winner_index].fund
         );
     } else {
-        (void)printf("\n游戏结束！\n");
+        (void)game_print("\n游戏结束！\n");
     }
 }

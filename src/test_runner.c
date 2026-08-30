@@ -39,6 +39,50 @@ const char *test_result_to_str(TestResult r)
     return "UNKNOWN";
 }
 
+/* ==================== 失败用例汇总（结束时集中显示） ==================== */
+
+#define MAX_FAILED_SUMMARY 512
+
+typedef struct {
+    char id[CASE_ID_MAX];
+    char name[CASE_NAME_MAX];
+} FailedCaseEntry;
+
+static FailedCaseEntry g_failed_cases[MAX_FAILED_SUMMARY];
+static int g_failed_count = 0;
+
+static void failed_cases_reset(void)
+{
+    g_failed_count = 0;
+}
+
+static void failed_cases_add(const char *id, const char *name)
+{
+    if (id == NULL || id[0] == '\0' || g_failed_count >= MAX_FAILED_SUMMARY) {
+        return;
+    }
+    snprintf(g_failed_cases[g_failed_count].id, CASE_ID_MAX, "%s", id);
+    snprintf(g_failed_cases[g_failed_count].name, CASE_NAME_MAX, "%s",
+             name != NULL ? name : "");
+    ++g_failed_count;
+}
+
+static void failed_cases_print_summary(void)
+{
+    int i;
+
+    if (g_failed_count == 0) {
+        printf("\n失败用例汇总：无（全部通过）\n");
+        return;
+    }
+    printf("\n================ 失败用例汇总（共 %d 个） ================\n",
+           g_failed_count);
+    for (i = 0; i < g_failed_count; ++i) {
+        printf("  [%s] %s\n", g_failed_cases[i].id, g_failed_cases[i].name);
+    }
+    printf("===========================================================\n");
+}
+
 /* ==================== 路径与目录工具 ==================== */
 
 static void dir_of(const char *path, char *out, size_t outsz)
@@ -275,10 +319,14 @@ int runner_run_case(const char *case_path, const char *results_dir, RunOutcome *
     if (rc != RC_OK) {
         memset(outcome, 0, sizeof(*outcome));
         outcome_error(outcome, rc, errbuf);
+        failed_cases_add(case_path, errbuf);
         return 0;
     }
 
     runner_run_loaded_case(&tc, case_path, results_dir, outcome);
+    if (outcome->result != RESULT_PASS) {
+        failed_cases_add(tc.case_id, tc.case_name);
+    }
     case_free(&tc);
     return 0;
 }
@@ -306,11 +354,13 @@ int runner_run_file(const char *path, const char *results_dir)
     text = fu_read_file(path, &len);
     if (text == NULL) {
         fprintf(stderr, "无法读取: %s\n", path);
+        failed_cases_add(path, "无法读取文件");
         return -1;
     }
     if (fu_parse_json(text, &root) != RC_OK || !cJSON_IsObject(root)) {
         free(text);
         fprintf(stderr, "JSON 无效: %s\n", path);
+        failed_cases_add(path, "JSON 无效");
         return -1;
     }
     free(text);
@@ -325,22 +375,26 @@ int runner_run_file(const char *path, const char *results_dir)
         if (!fu_json_get_string(sv, schema, sizeof(schema))) {
             cJSON_Delete(root);
             fprintf(stderr, "套件文件无效: %s：缺少顶层必填字段 schema_version\n", path);
+            failed_cases_add(path, "缺少 schema_version");
             return -1;
         }
         if (strcmp(schema, "1.0") != 0) {
             cJSON_Delete(root);
             fprintf(stderr, "套件文件无效: %s：不支持的 schema_version: %s（当前为 1.0）\n",
                     path, schema);
+            failed_cases_add(path, "不支持的 schema_version");
             return -1;
         }
         if (!cJSON_IsArray(tests)) {
             cJSON_Delete(root);
             fprintf(stderr, "套件文件无效: %s：tests 必须为数组\n", path);
+            failed_cases_add(path, "tests 必须为数组");
             return -1;
         }
         if (cJSON_GetArraySize(tests) == 0) {
             cJSON_Delete(root);
             fprintf(stderr, "套件文件无效: %s：tests 不能为空数组\n", path);
+            failed_cases_add(path, "tests 不能为空数组");
             return -1;
         }
 
@@ -359,6 +413,11 @@ int runner_run_file(const char *path, const char *results_dir)
                 RC_OK) {
                 printf("[ERROR] %s#%d\n  -> %s\n", path, i + 1, errbuf);
                 failures++;
+                {
+                    char load_id[CASE_ID_MAX + 16];
+                    snprintf(load_id, sizeof(load_id), "%s#%d", path, i + 1);
+                    failed_cases_add(load_id, errbuf);
+                }
                 cJSON_Delete(copy);
                 ran++;
                 continue;
@@ -378,6 +437,7 @@ int runner_run_file(const char *path, const char *results_dir)
                 printf("[ERROR] %s#%d\n  -> 重复 case_id: %s（INVALID_PRESET）\n",
                        path, i + 1, tc.case_id);
                 failures++;
+                failed_cases_add(tc.case_id, "重复 case_id（INVALID_PRESET）");
                 ran++;
                 case_free(&tc);
                 continue;
@@ -387,6 +447,7 @@ int runner_run_file(const char *path, const char *results_dir)
             print_outcome(tc.case_id, &oc);
             if (oc.result != RESULT_PASS) {
                 failures++;
+                failed_cases_add(tc.case_id, tc.case_name);
             }
             ran++;
             case_free(&tc);
@@ -461,6 +522,10 @@ int runner_run_dir(const char *dir_path, const char *results_dir)
     int failures = 0;
     int files = 0;
 
+    /* 测试模式：静默游戏内部提示；重置失败用例汇总 */
+    g_game_quiet = true;
+    failed_cases_reset();
+
 #ifdef _WIN32
     char pattern[1024];
     WIN32_FIND_DATAA fd;
@@ -522,5 +587,6 @@ int runner_run_dir(const char *dir_path, const char *results_dir)
 #endif
 
     printf("共 %d 个测试文件，失败/错误用例合计 %d 个\n", files, failures);
+    failed_cases_print_summary();
     return failures;
 }
