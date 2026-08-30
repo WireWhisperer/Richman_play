@@ -6,6 +6,7 @@
 static int skip_confined_turn(Game *g)
 {
     PLAYER *player;
+    const char *status_cn;
 
     if (g == NULL) {
         return 0;
@@ -20,17 +21,22 @@ static int skip_confined_turn(Game *g)
         return 0;
     }
 
-    if (player->status == HOSPITAL) {
-        (void)game_print("玩家 %c 正在住院，本回合无法行动。\n", player->id);
-    } else {
-        (void)game_print("玩家 %c 正在监狱中，本回合无法行动。\n", player->id);
-    }
+    status_cn = (player->status == HOSPITAL) ? "住院" : "监狱";
+    (void)game_print(
+        "当前玩家 %c：状态 %s，剩余轮数 %d，本回合无法行动。\n",
+        player->id,
+        status_cn,
+        (int)player->remaining_rounds
+    );
 
     player->remaining_rounds--;
     if (player->remaining_rounds <= 0) {
         player->status = NORMAL;
         player->remaining_rounds = 0;
-        (void)game_print("玩家 %c 已恢复自由，下次轮到时可以行动。\n", player->id);
+        (void)game_print(
+            "玩家 %c 已恢复自由，下次轮到时可以行动。\n",
+            player->id
+        );
     }
 
     game_finish_action_turn(g);
@@ -90,12 +96,15 @@ int game_roll(Game *g)
     int32_t steps;
 
     if (g == NULL) {
+        game_set_error("无法掷骰：游戏状态异常。");
         return RC_INVALID_PARAMS;
     }
     if (g->status != GAME_RUNNING) {
+        game_set_error("游戏已结束，无法再掷骰。");
         return RC_ACTION_AFTER_END;
     }
     if (g->phase != PHASE_COMMAND) {
+        game_set_error("现在不能掷骰，请先完成当前提示或退出商店。");
         return RC_INVALID_PHASE;
     }
 
@@ -106,6 +115,7 @@ int game_roll(Game *g)
     if (g->dice_next < g->dice_count) {
         steps = g->dice_seq[g->dice_next++];
     } else if (g->dice_preset_loaded) {
+        game_set_error("预置骰子已用完，无法再 ROLL。");
         return RC_DICE_SEQUENCE_EMPTY;
     } else {
         steps = (int32_t)(rand() % DICE_MAX) + DICE_MIN;
@@ -117,15 +127,19 @@ int game_roll(Game *g)
 int game_step(Game *g, int32_t steps)
 {
     if (g == NULL) {
+        game_set_error("无法移动：游戏状态异常。");
         return RC_INVALID_PARAMS;
     }
     if (g->status != GAME_RUNNING) {
+        game_set_error("游戏已结束，无法再移动。");
         return RC_ACTION_AFTER_END;
     }
     if (g->phase != PHASE_COMMAND) {
+        game_set_error("现在不能移动，请先完成当前提示或退出商店。");
         return RC_INVALID_PHASE;
     }
     if (steps < 0) {
+        game_set_error("步数须为非负整数，例如：STEP 4");
         return RC_INVALID_PARAMS;
     }
 

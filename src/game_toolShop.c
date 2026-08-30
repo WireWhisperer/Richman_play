@@ -84,7 +84,7 @@ int tool_shop_view_inventory(const Game *g, char *buf, size_t bufsz)
     const PLAYER *player = current_player_const(g);
 
     if (player == NULL || buf == NULL || bufsz == 0) {
-        write_message(buf, bufsz, "无法查看道具：当前玩家无效。");
+        write_message(buf, bufsz, "无法查看道具：当前没有可行动的玩家。");
         return -RC_INVALID_PARAMS;
     }
 
@@ -114,7 +114,7 @@ int tool_shop_enter(Game *g, char *message, size_t message_size)
 
     if (g->status != GAME_RUNNING || player->status != NORMAL) {
         write_message(message, message_size,
-                      "无法进入道具屋：当前玩家不能行动。");
+                      "无法进入道具屋：您本回合不能行动（医院/监狱或非您的回合）。");
         return -RC_INVALID_PHASE;
     }
 
@@ -146,7 +146,7 @@ int tool_shop_enter(Game *g, char *message, size_t message_size)
 int tool_shop_leave(Game *g, char *message, size_t message_size)
 {
     if (g == NULL) {
-        write_message(message, message_size, "退出失败：游戏状态无效。");
+        write_message(message, message_size, "退出失败：请重新开始游戏后再试。");
         return -RC_INVALID_PARAMS;
     }
 
@@ -179,7 +179,7 @@ int tool_shop_answer(Game *g, const char *input,
     if (g == NULL || g->phase != PHASE_PROMPT ||
         g->prompt != PROMPT_TOOL_SHOP) {
         write_message(message, message_size,
-                      "输入失败：当前不在道具屋购买阶段。");
+                      "现在不在道具屋，无法购买。走到道具屋后再选 1/2/3 或 F。");
         return -RC_INVALID_PHASE;
     }
     if (cursor == NULL) {
@@ -268,7 +268,7 @@ static int tool_shop_buy(Game *g, int32_t choice,
     if (player == NULL || g->phase != PHASE_PROMPT ||
         g->prompt != PROMPT_TOOL_SHOP) {
         write_message(message, message_size,
-                      "购买失败：当前不在道具屋购买阶段。");
+                      "现在不在道具屋，无法购买。走到道具屋后再选 1/2/3 或 F。");
         return -RC_INVALID_PHASE;
     }
 
@@ -351,15 +351,29 @@ static int validate_item_action(Game *g, PLAYER **player)
 {
     *player = current_player(g);
     if (*player == NULL) {
+        game_set_error("当前没有可行动的玩家。");
         return -RC_INVALID_PARAMS;
     }
     if (g->status != GAME_RUNNING) {
+        game_set_error("游戏已结束，无法再使用道具。");
         return -RC_ACTION_AFTER_END;
     }
     if (g->phase != PHASE_COMMAND || (*player)->status != NORMAL) {
+        game_set_error(
+            "现在不能使用道具，请先完成购买/升级提示或退出商店。");
         return -RC_INVALID_PHASE;
     }
     return RC_OK;
+}
+
+static const char *item_kind_cn(ItemKind kind)
+{
+    switch (kind) {
+    case ITEM_BLOCK: return "路障";
+    case ITEM_BOMB:  return "炸弹";
+    case ITEM_ROBOT: return "机器娃娃";
+    default:         return "道具";
+    }
 }
 
 static int place_board_item(Game *g, ItemKind kind, int32_t offset)
@@ -368,24 +382,37 @@ static int place_board_item(Game *g, ItemKind kind, int32_t offset)
     int8_t *count;
     int32_t target;
     int32_t insert_at;
+    const char *name = item_kind_cn(kind);
+    const char *cmd = (kind == ITEM_BOMB) ? "BOMB" : "BLOCK";
     int rc = validate_item_action(g, &player);
 
     if (rc != RC_OK) {
         return rc;
     }
     if (offset < -BLOCK_OFFSET_LIMIT || offset > BLOCK_OFFSET_LIMIT) {
+        game_set_error(
+            "偏移须在 -10 到 10 之间，例如：%s 3", cmd);
         return -RC_INVALID_PARAMS;
     }
 
     count = item_count(player, kind);
-    if (count == NULL || *count <= 0 ||
-        g->board_item_count < 0 ||
+    if (count == NULL || *count <= 0) {
+        game_set_error(
+            "背包里没有%s。可用 QUERY 查看道具，或到道具屋购买。",
+            name);
+        return -RC_INVALID_PARAMS;
+    }
+    if (g->board_item_count < 0 ||
         g->board_item_count >= MAX_BOARD_ITEMS) {
+        game_set_error("地图上的道具已达上限，无法再放置。");
         return -RC_INVALID_PARAMS;
     }
 
     target = normalize_position((int32_t)player->position + offset);
     if (board_item_index_at(g, target) >= 0) {
+        game_set_error(
+            "位置 %d 已有路障或炸弹，请换一个偏移（-10~10）。",
+            target);
         return -RC_INVALID_PARAMS;
     }
 
@@ -423,6 +450,8 @@ int game_robot(Game *g)
         return rc;
     }
     if (player->items.ROBOT <= 0) {
+        game_set_error(
+            "背包里没有机器娃娃，无法清理前方道具。可用 QUERY 查看，或到道具屋购买。");
         return -RC_INVALID_PARAMS;
     }
 
@@ -453,12 +482,12 @@ int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
 
     if (player == NULL) {
         write_message(message, message_size,
-                      "使用失败：当前玩家无效。");
+                      "当前没有可行动的玩家，无法使用道具。");
         return -RC_INVALID_PARAMS;
     }
     if (g->phase != PHASE_COMMAND) {
         write_message(message, message_size,
-                      "使用失败：请先退出商店或完成当前提示。");
+                      "现在不能使用道具，请先完成购买/升级提示或退出商店。");
         return -RC_INVALID_PHASE;
     }
 
@@ -466,12 +495,12 @@ int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
     case ITEM_BLOCK:
         if (player->items.BLOCK <= 0) {
             write_message(message, message_size,
-                          "使用失败：背包中没有路障。");
+                          "背包里没有路障。可用 QUERY 查看道具，或到道具屋购买。");
             return -RC_INVALID_PARAMS;
         }
         if (offset < -BLOCK_OFFSET_LIMIT || offset > BLOCK_OFFSET_LIMIT) {
             write_message(message, message_size,
-                          "路障使用失败：距离须在-10到10之间。");
+                          "偏移须在 -10 到 10 之间，例如：BLOCK 3");
             return -RC_INVALID_PARAMS;
         }
         target = normalize_position((int32_t)player->position + offset);
@@ -480,20 +509,22 @@ int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
             write_message(message, message_size,
                           "路障使用成功，已放置在地图%d号位置。", target);
         } else {
-            write_message(message, message_size,
-                          "路障使用失败：距离须在-10到10之间，且目标位置不能已有道具。");
+            write_message(message, message_size, "%s",
+                          game_last_error()[0] != '\0'
+                              ? game_last_error()
+                              : "路障放置失败，请换一个偏移（-10~10）。");
         }
         return rc;
 
     case ITEM_BOMB:
         if (player->items.BOMB <= 0) {
             write_message(message, message_size,
-                          "使用失败：背包中没有炸弹。");
+                          "背包里没有炸弹。可用 QUERY 查看道具，或到道具屋购买。");
             return -RC_INVALID_PARAMS;
         }
         if (offset < -BLOCK_OFFSET_LIMIT || offset > BLOCK_OFFSET_LIMIT) {
             write_message(message, message_size,
-                          "炸弹使用失败：距离须在-10到10之间。");
+                          "偏移须在 -10 到 10 之间，例如：BOMB 5");
             return -RC_INVALID_PARAMS;
         }
         target = normalize_position((int32_t)player->position + offset);
@@ -503,15 +534,17 @@ int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
                           "炸弹使用成功，已放置在地图%d号位置；"
                           "经过者会被炸伤并送往医院。", target);
         } else {
-            write_message(message, message_size,
-                          "炸弹使用失败：距离须在-10到10之间，且目标位置不能已有道具。");
+            write_message(message, message_size, "%s",
+                          game_last_error()[0] != '\0'
+                              ? game_last_error()
+                              : "炸弹放置失败，请换一个偏移（-10~10）。");
         }
         return rc;
 
     case ITEM_ROBOT:
         if (player->items.ROBOT <= 0) {
             write_message(message, message_size,
-                          "使用失败：背包中没有机器娃娃。");
+                          "背包里没有机器娃娃，无法清理前方道具。");
             return -RC_INVALID_PARAMS;
         }
         before_count = g->board_item_count;
@@ -521,14 +554,16 @@ int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
                           "机器娃娃使用成功，已清除前方10步内%d个路障或炸弹。",
                           before_count - g->board_item_count);
         } else {
-            write_message(message, message_size,
-                          "机器娃娃使用失败：当前阶段不能使用道具。");
+            write_message(message, message_size, "%s",
+                          game_last_error()[0] != '\0'
+                              ? game_last_error()
+                              : "现在不能使用机器娃娃。");
         }
         return rc;
 
     default:
         write_message(message, message_size,
-                      "使用失败：道具类型无效。");
+                      "无法识别的道具类型。");
         return -RC_INVALID_PARAMS;
     }
 }

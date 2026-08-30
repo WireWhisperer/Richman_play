@@ -172,6 +172,7 @@ int  game_apply_initial_fund(Game *g, int32_t initial_fund); /* 为已选玩家�
 int  game_start_manual(Game *g, int32_t initial_fund);  /* 手动对局开局：四名玩家同额初始资金 */
 int  game_apply_preset(Game *g, const struct cJSON *preset);   /* 加载 Preset，0 成功 */
 const char *game_last_error(void);                      /* 最近一次游戏操作的错误描述 */
+void game_set_error(const char *fmt, ...);              /* 设置最近一次错误描述（玩家可读） */
 
 /* ===== 静默输出（自动化测试模式） ===== */
 extern bool g_game_quiet;               /* true 时游戏内部提示不打印，仅测试模式置位 */
