@@ -20,7 +20,8 @@ if ! gcc "$STD" -o "$PROBE_DIR/probe" "$PROBE_DIR/probe.c" >/dev/null 2>&1; then
   echo "Note: this compiler has no -std=c17, falling back to -std=c11."
   STD="-std=c11"
 fi
-rm -rf "$PROBE_DIR"
+# 清理失败不该中断构建（脚本开头有 set -e）
+rm -rf "$PROBE_DIR" 2>/dev/null || true
 
 mkdir -p dist
 
