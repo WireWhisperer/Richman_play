@@ -1,4 +1,7 @@
 * text=auto eol=lf
+# Windows 批处理必须 CRLF：cmd.exe 解析 LF 行尾的 goto / 多行 if 块时不可靠。
+*.bat text eol=crlf
+*.cmd text eol=crlf
 *.c text eol=lf
 *.h text eol=lf
 *.json text eol=lf

@@ -18,6 +18,6 @@ results/
 dist/
 _recover/
 
-
-results/
+# 便携工具链：build.bat 首次运行时自动下载解压到这里，不入库
+tools/
 

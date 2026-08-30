@@ -4,8 +4,23 @@
 #   make                  # Linux / macOS / MSYS2
 #   ./build.sh            # Linux / macOS shell script
 
-CC      ?= gcc
-CFLAGS  ?= -std=c17 -O2 -Wall -Wextra -Iinclude -Ithird_party/cJSON
+# Windows 上强制用 cmd.exe 执行配方：即使在 Git Bash / MSYS2 里调用
+# mingw32-make，下面的 copy / del 等 CMD 语法也不会被 sh 拿去解析。
+ifeq ($(OS),Windows_NT)
+  SHELL = cmd.exe
+  .SHELLFLAGS = /c
+endif
+
+# GNU make 内建 CC=cc，用 ?= 覆盖不了它，所以只在 CC 仍是内建值时改成 gcc。
+# 命令行（make CC=clang）和环境变量仍然优先。
+ifeq ($(origin CC),default)
+  CC := gcc
+endif
+
+# 默认 c11：兼容性最好，老 MinGW / 旧 clang 也能编。
+# 想用 C17（需要 gcc 8+ / clang 6+）：  make STD=-std=c17
+STD     ?= -std=c11
+CFLAGS  ?= $(STD) -O2 -Wall -Wextra -Iinclude -Ithird_party/cJSON
 LDFLAGS ?=
 
 SRCS = \

@@ -12,10 +12,20 @@ echo "Using:"
 gcc --version | head -n 1
 echo
 
+# 优先 C17，编译器不支持则回退 C11（gcc 7.x 及更早没有 -std=c17）。
+STD="-std=c17"
+PROBE_DIR="$(mktemp -d)"
+printf 'int main(void){return 0;}\n' > "$PROBE_DIR/probe.c"
+if ! gcc "$STD" -o "$PROBE_DIR/probe" "$PROBE_DIR/probe.c" >/dev/null 2>&1; then
+  echo "Note: this compiler has no -std=c17, falling back to -std=c11."
+  STD="-std=c11"
+fi
+rm -rf "$PROBE_DIR"
+
 mkdir -p dist
 
 echo "Compiling..."
-gcc -std=c17 -O2 -Wall -Wextra \
+gcc "$STD" -O2 -Wall -Wextra \
   -Iinclude -Ithird_party/cJSON \
   -o dist/rich_demo \
   @sources.rsp
