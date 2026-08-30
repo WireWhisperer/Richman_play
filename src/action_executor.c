@@ -155,13 +155,13 @@ int action_execute(Game *g, const cJSON *action, ActionResult *out)
         char buf[4096];
         rc = game_query(g, buf, sizeof(buf));
         if (rc == RC_OK) {
-            printf("%s", buf);   /* QUERY 文本输出，不参与状态比较（规范 2.5） */
+            RICH_PRINTF("%s", buf);   /* QUERY 文本输出，不参与状态比较（规范 2.5） */
         }
     } else if (strcasecmp(c, "HELP") == 0) {
         char buf[1024];
         rc = game_help(buf, sizeof(buf));
         if (rc == RC_OK) {
-            printf("%s", buf);
+            RICH_PRINTF("%s", buf);
         }
     } else if (strcasecmp(c, "ANSWER") == 0) {
         rc = game_answer(g, cJSON_GetObjectItemCaseSensitive(params, "value")->valuestring);

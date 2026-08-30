@@ -181,9 +181,10 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
     }
 
     {
-        /* 不再重定向 stdout：Linux 上 dup2(/dev/null) 易导致后续结果输出丢失。
-           PASS 行走 stderr；游戏过程日志允许打印，不影响用例枚举。 */
+        /* 静默游戏过程日志，结果行仍打印 [PASS]/[FAIL]（不重定向 stdout） */
+        game_set_log_quiet(1);
         rc = action_execute_all(&g, tc->actions, &ar);
+        game_set_log_quiet(0);
     }
     if (rc != RC_OK) {
         if (expects_error(tc) && error_code_matches(tc, rc)) {

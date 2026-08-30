@@ -162,7 +162,7 @@ void handle_land_landing(Game *g, int32_t position)
         cell = &g->cells[position];
         g->phase = PHASE_PROMPT;
         g->prompt = PROMPT_BUY;
-        (void)printf(
+        RICH_PRINTF(
             "此地尚未出售，购买价格 %d 元。您当前拥有资金 %d 元。是否购买？(Y/N)：",
             cell->price,
             player->fund
@@ -172,14 +172,14 @@ void handle_land_landing(Game *g, int32_t position)
 
     if (prop->owner_index == g->current_index) {
         if (prop->level >= LAND_MAX_LEVEL) {
-            (void)printf("这是您自己的%s，已达最高等级。\n",
+            RICH_PRINTF("这是您自己的%s，已达最高等级。\n",
                          land_level_name(prop->level));
             return;
         }
         cell = &g->cells[position];
         upgrade_cost = cell->upgrade_cost;
         if (player->fund < upgrade_cost) {
-            (void)printf(
+            RICH_PRINTF(
                 "这是您自己的%s，升级需 %d 元，资金不足。\n",
                 land_level_name(prop->level),
                 upgrade_cost
@@ -188,7 +188,7 @@ void handle_land_landing(Game *g, int32_t position)
         }
         g->phase = PHASE_PROMPT;
         g->prompt = PROMPT_UPGRADE;
-        (void)printf(
+        RICH_PRINTF(
             "这是您自己的%s，升级至%s需 %d 元。是否升级？(Y/N)：",
             land_level_name(prop->level),
             land_level_name(prop->level + 1),
@@ -376,19 +376,19 @@ int game_sell_property(Game *g, int32_t position)
 
     prop_index = property_index_at(g, position);
     if (prop_index < 0) {
-        (void)printf("位置 %d 没有可出售的地产。\n", position);
+        RICH_PRINTF("位置 %d 没有可出售的地产。\n", position);
         return RC_OK; /* 业务失败：不中断自动化流水线 */
     }
 
     prop = &g->properties[prop_index];
     if (prop->owner_index != g->current_index) {
-        (void)printf("位置 %d 的地产不属于您。\n", position);
+        RICH_PRINTF("位置 %d 的地产不属于您。\n", position);
         return RC_OK; /* 业务失败：不中断自动化流水线 */
     }
 
     price = property_sell_price(g, prop);
     player->fund += price;
-    (void)printf(
+    RICH_PRINTF(
         "已出售位置 %d 的%s，获得 %d 元，当前资金 %d 元。\n",
         position,
         land_level_name(prop->level),

@@ -172,6 +172,14 @@ int  game_start_manual(Game *g, int32_t initial_fund);  /* 手动对局开局：
 int  game_apply_preset(Game *g, const struct cJSON *preset);   /* 加载 Preset，0 成功 */
 const char *game_last_error(void);                      /* 最近一次游戏操作的错误描述 */
 
+/* 自动化测试时可关闭过程日志，只保留 PASS/FAIL 结果行 */
+void game_set_log_quiet(int quiet);
+int  game_is_log_quiet(void);
+void game_printf(const char *fmt, ...);
+
+#define RICH_PRINTF(...) \
+    do { if (!game_is_log_quiet()) (void)printf(__VA_ARGS__); } while (0)
+
 /* ===== 枚举 <-> JSON 字符串固定映射（规范 14.2） ===== */
 const char *cell_type_to_str(CellType t);
 int         cell_type_from_str(const char *s);      /* 找不到返回 -1 */
