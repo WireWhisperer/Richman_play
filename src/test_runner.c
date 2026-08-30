@@ -43,7 +43,13 @@ const char *test_result_to_str(TestResult r)
     return "UNKNOWN";
 }
 
-/* 屏蔽游戏交互 printf，避免 PASS 时刷屏；失败时再输出定位信息。 */
+/*
+ * 测试进度/结果一律走 stderr，避免被“屏蔽游戏 stdout”误伤。
+ * 游戏交互 printf 仍走 stdout，执行 Action 期间临时接到空设备。
+ */
+#define TR_OUT stderr
+
+/* 屏蔽游戏交互 printf，避免 PASS 时刷屏。 */
 typedef struct {
     int saved_fd;
     int null_fd;
@@ -59,17 +65,25 @@ static void stdout_silence_begin(StdoutSilence *s)
 #ifdef _WIN32
     s->saved_fd = _dup(_fileno(stdout));
     s->null_fd = _open("NUL", _O_WRONLY);
-    if (s->saved_fd >= 0 && s->null_fd >= 0 &&
-        _dup2(s->null_fd, _fileno(stdout)) == 0) {
-        s->active = 1;
+    if (s->saved_fd < 0 || s->null_fd < 0) {
+        return;
     }
+    if (_dup2(s->null_fd, _fileno(stdout)) != 0) {
+        return;
+    }
+    clearerr(stdout);
+    s->active = 1;
 #else
-    s->saved_fd = dup(STDOUT_FILENO);
+    s->saved_fd = dup(fileno(stdout));
     s->null_fd = open("/dev/null", O_WRONLY);
-    if (s->saved_fd >= 0 && s->null_fd >= 0 &&
-        dup2(s->null_fd, STDOUT_FILENO) == 0) {
-        s->active = 1;
+    if (s->saved_fd < 0 || s->null_fd < 0) {
+        return;
     }
+    if (dup2(s->null_fd, fileno(stdout)) != 0) {
+        return;
+    }
+    clearerr(stdout);
+    s->active = 1;
 #endif
 }
 
@@ -81,9 +95,22 @@ static void stdout_silence_end(StdoutSilence *s)
     (void)fflush(stdout);
     if (s->active && s->saved_fd >= 0) {
 #ifdef _WIN32
-        (void)_dup2(s->saved_fd, _fileno(stdout));
+        if (_dup2(s->saved_fd, _fileno(stdout)) == 0) {
+            clearerr(stdout);
+            if (_isatty(_fileno(stdout))) {
+                setvbuf(stdout, NULL, _IONBF, 0);
+            }
+        }
 #else
-        (void)dup2(s->saved_fd, STDOUT_FILENO);
+        if (dup2(s->saved_fd, fileno(stdout)) == 0) {
+            clearerr(stdout);
+            /* 恢复为行缓冲/无缓冲，避免后续结果卡在缓冲区里 */
+            if (isatty(fileno(stdout))) {
+                setvbuf(stdout, NULL, _IOLBF, 0);
+            } else {
+                setvbuf(stdout, NULL, _IONBF, 0);
+            }
+        }
 #endif
     }
 #ifdef _WIN32
@@ -345,20 +372,20 @@ static void print_outcome(const TestCase *tc, const RunOutcome *oc)
     const char *id = (tc != NULL && tc->case_id[0] != '\0') ? tc->case_id : "(unknown)";
 
     if (oc->result == RESULT_PASS) {
-        printf("[PASS] %s\n", id);
+        fprintf(TR_OUT, "[PASS] %s\n", id);
         return;
     }
 
-    printf("[%s] %s", test_result_to_str(oc->result), id);
+    fprintf(TR_OUT, "[%s] %s", test_result_to_str(oc->result), id);
     if (tc != NULL && tc->case_name[0] != '\0') {
-        printf(" — %s", tc->case_name);
+        fprintf(TR_OUT, " — %s", tc->case_name);
     }
-    printf("\n");
+    fprintf(TR_OUT, "\n");
 
     if (oc->result == RESULT_ERROR) {
-        printf("  code: %s\n", result_code_name((ResultCode)oc->code));
+        fprintf(TR_OUT, "  code: %s\n", result_code_name((ResultCode)oc->code));
         if (oc->message[0] != '\0') {
-            printf("  message: %s\n", oc->message);
+            fprintf(TR_OUT, "  message: %s\n", oc->message);
         }
         return;
     }
@@ -366,23 +393,23 @@ static void print_outcome(const TestCase *tc, const RunOutcome *oc)
     /* FAIL：输出足以定位差异的字段 */
     {
         const MatchError *m = &oc->match_err;
-        printf("  code: %s\n", result_code_name((ResultCode)oc->code));
+        fprintf(TR_OUT, "  code: %s\n", result_code_name((ResultCode)oc->code));
         if (m->path[0] != '\0') {
-            printf("  path: %s\n", m->path);
+            fprintf(TR_OUT, "  path: %s\n", m->path);
         }
         if (m->expected[0] != '\0') {
-            printf("  expected: %s\n", m->expected);
+            fprintf(TR_OUT, "  expected: %s\n", m->expected);
         }
         if (m->actual[0] != '\0') {
-            printf("  actual: %s\n", m->actual);
+            fprintf(TR_OUT, "  actual: %s\n", m->actual);
         }
         if (m->message[0] != '\0') {
-            printf("  message: %s\n", m->message);
+            fprintf(TR_OUT, "  message: %s\n", m->message);
         } else if (oc->message[0] != '\0') {
-            printf("  message: %s\n", oc->message);
+            fprintf(TR_OUT, "  message: %s\n", oc->message);
         }
         if (oc->actual_path[0] != '\0') {
-            printf("  actual_file: %s\n", oc->actual_path);
+            fprintf(TR_OUT, "  actual_file: %s\n", oc->actual_path);
         }
     }
 }
@@ -431,7 +458,7 @@ int runner_run_file(const char *path, const char *results_dir)
             }
             if (case_load_from_object(&tc, copy, schema, errbuf, sizeof(errbuf)) !=
                 RC_OK) {
-                printf("[ERROR] %s#%d\n  -> %s\n", path, i + 1, errbuf);
+                fprintf(TR_OUT, "[ERROR] %s#%d\n  message: %s\n", path, i + 1, errbuf);
                 failures++;
                 cJSON_Delete(copy);
                 ran++;
@@ -448,7 +475,7 @@ int runner_run_file(const char *path, const char *results_dir)
             case_free(&tc);
         }
         cJSON_Delete(root);
-        printf("文件 %s：%d 个用例，失败/错误 %d 个\n", path, ran, failures);
+        fprintf(TR_OUT, "文件 %s：%d 个用例，失败/错误 %d 个\n", path, ran, failures);
         return failures;
     }
 
@@ -460,7 +487,7 @@ int runner_run_file(const char *path, const char *results_dir)
 
         test_case_init(&tc);
         if (case_load_file(&tc, path, load_err, sizeof(load_err)) != RC_OK) {
-            printf("[ERROR] %s\n  code: %s\n  message: %s\n",
+            fprintf(TR_OUT, "[ERROR] %s\n  code: %s\n  message: %s\n",
                    path, "INVALID_JSON", load_err);
             return 1;
         }
@@ -522,71 +549,84 @@ static int is_testcase_file(const char *name)
     return 1;
 }
 
+static int cmp_case_name(const void *a, const void *b)
+{
+    return strcmp((const char *)a, (const char *)b);
+}
+
 int runner_run_dir(const char *dir_path, const char *results_dir)
 {
+    enum { MAX_FILES = 256, NAME_MAX_LEN = 256 };
+    char names[MAX_FILES][NAME_MAX_LEN];
+    int count = 0;
     int failures = 0;
-    int files = 0;
+    int i;
 
 #ifdef _WIN32
-    char pattern[1024];
-    WIN32_FIND_DATAA fd;
-    HANDLE h;
+    {
+        char pattern[1024];
+        WIN32_FIND_DATAA fd;
+        HANDLE h;
 
-    snprintf(pattern, sizeof(pattern), "%s\\*.json", dir_path);
-    h = FindFirstFileA(pattern, &fd);
-    if (h == INVALID_HANDLE_VALUE) {
-        fprintf(stderr, "无法打开测试目录: %s\n", dir_path);
-        return -1;
+        snprintf(pattern, sizeof(pattern), "%s\\*.json", dir_path);
+        h = FindFirstFileA(pattern, &fd);
+        if (h == INVALID_HANDLE_VALUE) {
+            fprintf(stderr, "无法打开测试目录: %s\n", dir_path);
+            return -1;
+        }
+        do {
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                continue;
+            }
+            if (!is_testcase_file(fd.cFileName) || count >= MAX_FILES) {
+                continue;
+            }
+            snprintf(names[count], NAME_MAX_LEN, "%s", fd.cFileName);
+            ++count;
+        } while (FindNextFileA(h, &fd));
+        FindClose(h);
     }
-    do {
-        int n;
-        char case_path[1024];
-
-        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            continue;
-        }
-        if (!is_testcase_file(fd.cFileName)) {
-            continue;
-        }
-        snprintf(case_path, sizeof(case_path), "%s\\%s", dir_path, fd.cFileName);
-        printf("== %s ==\n", fd.cFileName);
-        n = runner_run_file(case_path, results_dir);
-        files++;
-        if (n < 0) {
-            failures++;
-        } else {
-            failures += n;
-        }
-    } while (FindNextFileA(h, &fd));
-    FindClose(h);
 #else
-    DIR *d = opendir(dir_path);
-    struct dirent *ent;
+    {
+        DIR *d = opendir(dir_path);
+        struct dirent *ent;
 
-    if (d == NULL) {
-        fprintf(stderr, "无法打开测试目录: %s\n", dir_path);
-        return -1;
-    }
-    while ((ent = readdir(d)) != NULL) {
-        int n;
-        char case_path[1024];
-
-        if (!is_testcase_file(ent->d_name)) {
-            continue;
+        if (d == NULL) {
+            fprintf(stderr, "无法打开测试目录: %s\n", dir_path);
+            return -1;
         }
-        snprintf(case_path, sizeof(case_path), "%s/%s", dir_path, ent->d_name);
-        printf("== %s ==\n", ent->d_name);
-        n = runner_run_file(case_path, results_dir);
-        files++;
-        if (n < 0) {
-            failures++;
-        } else {
-            failures += n;
+        while ((ent = readdir(d)) != NULL) {
+            if (!is_testcase_file(ent->d_name) || count >= MAX_FILES) {
+                continue;
+            }
+            snprintf(names[count], NAME_MAX_LEN, "%s", ent->d_name);
+            ++count;
         }
+        closedir(d);
     }
-    closedir(d);
 #endif
 
-    printf("共 %d 个测试文件，失败/错误用例合计 %d 个\n", files, failures);
+    /* Linux readdir 顺序不稳定；排序后输出与 Windows 一致、便于对照 */
+    qsort(names, (size_t)count, NAME_MAX_LEN, cmp_case_name);
+
+    for (i = 0; i < count; ++i) {
+        int n;
+        char case_path[1024];
+#ifdef _WIN32
+        snprintf(case_path, sizeof(case_path), "%s\\%s", dir_path, names[i]);
+#else
+        snprintf(case_path, sizeof(case_path), "%s/%s", dir_path, names[i]);
+#endif
+        fprintf(TR_OUT, "== %s ==\n", names[i]);
+        n = runner_run_file(case_path, results_dir);
+        if (n < 0) {
+            failures++;
+        } else {
+            failures += n;
+        }
+    }
+
+    fprintf(TR_OUT, "共 %d 个测试文件，失败/错误用例合计 %d 个\n", count, failures);
+    (void)fflush(TR_OUT);
     return failures;
 }

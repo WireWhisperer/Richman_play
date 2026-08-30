@@ -9,6 +9,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
+/* -std=c17 下需显式打开 POSIX 接口，否则 readlink 为隐式声明 */
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
 #include <limits.h>
 #include <stdlib.h>
 #include <unistd.h>
