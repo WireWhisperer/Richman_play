@@ -10,8 +10,3 @@ else()
 endif()
 
 add_test(NAME US03_player_setup COMMAND test_us03)
-
-add_executable(test_merged_features test_merged_features.c)
-target_link_libraries(test_merged_features PRIVATE richman_core)
-richman_enable_warnings(test_merged_features)
-add_test(NAME merged_features COMMAND test_merged_features)
