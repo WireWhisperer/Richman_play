@@ -9,7 +9,7 @@
 ### 1. 克隆
 
 ```powershell
-git clone -b YZH git@github.com:WireWhisperer/Richman_play.git
+git clone -b FINAL https://github.com/WireWhisperer/Richman_play.git
 cd Richman_play
 ```
 
@@ -73,9 +73,9 @@ cmake --build build
 **Linux / macOS（仅需 gcc）：**
 
 ```bash
-git clone -b YZH git@github.com:WireWhisperer/Richman_play.git
+git clone -b FINAL https://github.com/WireWhisperer/Richman_play.git
 cd Richman_play
-chmod +x build.sh run-game.sh
+chmod +x build.sh run-game.sh run-tests.sh
 ./build.sh          # 或: make
 ./run-game.sh       # 或: ./dist/rich_demo
 ```
