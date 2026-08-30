@@ -51,7 +51,7 @@ typedef struct {
 static FailedCaseEntry g_failed_cases[MAX_FAILED_SUMMARY];
 static int g_failed_count = 0;
 
-static void failed_cases_reset(void)
+static void failed_cases_reset_impl(void)
 {
     g_failed_count = 0;
 }
@@ -81,6 +81,16 @@ static void failed_cases_print_summary(void)
         printf("  [%s] %s\n", g_failed_cases[i].id, g_failed_cases[i].name);
     }
     printf("===========================================================\n");
+}
+
+void runner_failed_summary_reset(void)
+{
+    failed_cases_reset_impl();
+}
+
+void runner_failed_summary_print(void)
+{
+    failed_cases_print_summary();
 }
 
 /* ==================== 路径与目录工具 ==================== */
@@ -524,7 +534,7 @@ int runner_run_dir(const char *dir_path, const char *results_dir)
 
     /* 测试模式：静默游戏内部提示；重置失败用例汇总 */
     g_game_quiet = true;
-    failed_cases_reset();
+    runner_failed_summary_reset();
 
 #ifdef _WIN32
     char pattern[1024];
@@ -587,6 +597,6 @@ int runner_run_dir(const char *dir_path, const char *results_dir)
 #endif
 
     printf("共 %d 个测试文件，失败/错误用例合计 %d 个\n", files, failures);
-    failed_cases_print_summary();
+    runner_failed_summary_print();
     return failures;
 }

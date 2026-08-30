@@ -57,4 +57,10 @@ int runner_run_file(const char *path, const char *results_dir);
 /** 运行目录下全部 .json 测试文件并输出汇总，0 全部 PASS */
 int runner_run_dir(const char *dir_path, const char *results_dir);
 
+/** 重置失败用例汇总（单文件模式运行前调用） */
+void runner_failed_summary_reset(void);
+
+/** 集中打印失败用例的 id 与 name（全部运行结束后调用） */
+void runner_failed_summary_print(void);
+
 #endif /* RICH_TEST_RUNNER_H */

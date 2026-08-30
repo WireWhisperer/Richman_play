@@ -69,19 +69,43 @@ static int load_map_with_fallback(Game *game)
     return RC_INVALID_MAP;
 }
 
+static int path_is_file(const char *path)
+{
+    FILE *fp;
+
+    if (path == NULL || path[0] == '\0') {
+        return 0;
+    }
+    fp = fopen(path, "rb");
+    if (fp == NULL) {
+        return 0;
+    }
+    fclose(fp);
+    return 1;
+}
+
 static int run_automated_tests(int argc, char **argv)
 {
-    const char *dir = "testcases";
+    const char *target = "testcases";
     const char *results = "results";
     int failures;
 
     if (argc >= 3) {
-        dir = argv[2];
+        target = argv[2];
     }
 
     console_init();
-    printf("Running automated tests from: %s\n", dir);
-    failures = runner_run_dir(dir, results);
+    if (path_is_file(target)) {
+        /* 单文件模式：只运行指定的 .json 测试文件 */
+        printf("Running test file: %s\n", target);
+        g_game_quiet = true;
+        runner_failed_summary_reset();
+        failures = runner_run_file(target, results);
+        runner_failed_summary_print();
+    } else {
+        printf("Running automated tests from: %s\n", target);
+        failures = runner_run_dir(target, results);
+    }
     if (failures < 0) {
         return 2;
     }
