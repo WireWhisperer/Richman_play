@@ -80,7 +80,8 @@ static int run_automated_tests(int argc, char **argv)
     }
 
     console_init();
-    printf("Running automated tests from: %s\n", dir);
+    fprintf(stderr, "Running automated tests from: %s\n", dir);
+    (void)fflush(stderr);
     failures = runner_run_dir(dir, results);
     if (failures < 0) {
         return 2;

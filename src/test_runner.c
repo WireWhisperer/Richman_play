@@ -25,12 +25,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include <io.h>
-#include <fcntl.h>
 #else
 #include <dirent.h>
-#include <fcntl.h>
-#include <unistd.h>
 #endif
 
 const char *test_result_to_str(TestResult r)
@@ -43,95 +39,8 @@ const char *test_result_to_str(TestResult r)
     return "UNKNOWN";
 }
 
-/*
- * 测试进度/结果一律走 stderr，避免被“屏蔽游戏 stdout”误伤。
- * 游戏交互 printf 仍走 stdout，执行 Action 期间临时接到空设备。
- */
+/* 测试进度/结果走 stderr，与游戏 stdout 日志分离，避免被重定向误伤。 */
 #define TR_OUT stderr
-
-/* 屏蔽游戏交互 printf，避免 PASS 时刷屏。 */
-typedef struct {
-    int saved_fd;
-    int null_fd;
-    int active;
-} StdoutSilence;
-
-static void stdout_silence_begin(StdoutSilence *s)
-{
-    s->saved_fd = -1;
-    s->null_fd = -1;
-    s->active = 0;
-    (void)fflush(stdout);
-#ifdef _WIN32
-    s->saved_fd = _dup(_fileno(stdout));
-    s->null_fd = _open("NUL", _O_WRONLY);
-    if (s->saved_fd < 0 || s->null_fd < 0) {
-        return;
-    }
-    if (_dup2(s->null_fd, _fileno(stdout)) != 0) {
-        return;
-    }
-    clearerr(stdout);
-    s->active = 1;
-#else
-    s->saved_fd = dup(fileno(stdout));
-    s->null_fd = open("/dev/null", O_WRONLY);
-    if (s->saved_fd < 0 || s->null_fd < 0) {
-        return;
-    }
-    if (dup2(s->null_fd, fileno(stdout)) != 0) {
-        return;
-    }
-    clearerr(stdout);
-    s->active = 1;
-#endif
-}
-
-static void stdout_silence_end(StdoutSilence *s)
-{
-    if (s == NULL) {
-        return;
-    }
-    (void)fflush(stdout);
-    if (s->active && s->saved_fd >= 0) {
-#ifdef _WIN32
-        if (_dup2(s->saved_fd, _fileno(stdout)) == 0) {
-            clearerr(stdout);
-            if (_isatty(_fileno(stdout))) {
-                setvbuf(stdout, NULL, _IONBF, 0);
-            }
-        }
-#else
-        if (dup2(s->saved_fd, fileno(stdout)) == 0) {
-            clearerr(stdout);
-            /* 恢复为行缓冲/无缓冲，避免后续结果卡在缓冲区里 */
-            if (isatty(fileno(stdout))) {
-                setvbuf(stdout, NULL, _IOLBF, 0);
-            } else {
-                setvbuf(stdout, NULL, _IONBF, 0);
-            }
-        }
-#endif
-    }
-#ifdef _WIN32
-    if (s->saved_fd >= 0) {
-        (void)_close(s->saved_fd);
-    }
-    if (s->null_fd >= 0) {
-        (void)_close(s->null_fd);
-    }
-#else
-    if (s->saved_fd >= 0) {
-        (void)close(s->saved_fd);
-    }
-    if (s->null_fd >= 0) {
-        (void)close(s->null_fd);
-    }
-#endif
-    s->saved_fd = -1;
-    s->null_fd = -1;
-    s->active = 0;
-}
 
 /* ==================== 路径与目录工具 ==================== */
 
@@ -272,10 +181,9 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
     }
 
     {
-        StdoutSilence silence;
-        stdout_silence_begin(&silence);
+        /* 不再重定向 stdout：Linux 上 dup2(/dev/null) 易导致后续结果输出丢失。
+           PASS 行走 stderr；游戏过程日志允许打印，不影响用例枚举。 */
         rc = action_execute_all(&g, tc->actions, &ar);
-        stdout_silence_end(&silence);
     }
     if (rc != RC_OK) {
         if (expects_error(tc) && error_code_matches(tc, rc)) {
