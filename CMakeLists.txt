@@ -1,8 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 project(rich_demo LANGUAGES C)
 
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+# 优先 C17；编译器不支持（gcc 7.x 及更早没有 -std=c17）时降到 C11。
+# 这样老旧工具链也能配置成功，而不是报
+# "Target requires the language dialect C17"。
+include(CheckCCompilerFlag)
+check_c_compiler_flag("-std=c17" RICHMAN_HAVE_STD_C17)
+if(RICHMAN_HAVE_STD_C17)
+    set(CMAKE_C_STANDARD 17)
+else()
+    set(CMAKE_C_STANDARD 11)
+endif()
+set(CMAKE_C_STANDARD_REQUIRED OFF)
 set(CMAKE_C_EXTENSIONS OFF)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/dist)

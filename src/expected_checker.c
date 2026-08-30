@@ -11,7 +11,6 @@
  */
 #include "expected_checker.h"
 
-#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -33,7 +32,10 @@ static void value_to_text(const cJSON *node, char *buf, size_t sz)
     } else if (cJSON_IsNumber(node)) {
         double d = node->valuedouble;
         if (d == (double)(long long)d) {
-            snprintf(buf, sz, "%" PRId64, (int64_t)d);
+            /* 整数值用 %.0f 输出，避开平台相关的 64 位格式符：
+               mingw-w64 的 msvcrt 不认 %lld，而它的 PRId64 是 "I64d"，
+               在 -pedantic 下又会报错。 */
+            snprintf(buf, sz, "%.0f", d);
         } else {
             snprintf(buf, sz, "%g", d);
         }
