@@ -90,12 +90,15 @@ int game_roll(Game *g)
     int32_t steps;
 
     if (g == NULL) {
+        game_set_error("无法掷骰：游戏状态异常。");
         return RC_INVALID_PARAMS;
     }
     if (g->status != GAME_RUNNING) {
+        game_set_error("游戏已结束，无法再掷骰。");
         return RC_ACTION_AFTER_END;
     }
     if (g->phase != PHASE_COMMAND) {
+        game_set_error("现在不能掷骰，请先完成当前提示或退出商店。");
         return RC_INVALID_PHASE;
     }
 
@@ -106,6 +109,7 @@ int game_roll(Game *g)
     if (g->dice_next < g->dice_count) {
         steps = g->dice_seq[g->dice_next++];
     } else if (g->dice_preset_loaded) {
+        game_set_error("预置骰子已用完，无法再 ROLL。");
         return RC_DICE_SEQUENCE_EMPTY;
     } else {
         steps = (int32_t)(rand() % DICE_MAX) + DICE_MIN;
@@ -117,15 +121,20 @@ int game_roll(Game *g)
 int game_step(Game *g, int32_t steps)
 {
     if (g == NULL) {
+        game_set_error("无法移动：游戏状态异常。");
         return RC_INVALID_PARAMS;
     }
     if (g->status != GAME_RUNNING) {
+        game_set_error("游戏已结束，无法再移动。");
         return RC_ACTION_AFTER_END;
     }
     if (g->phase != PHASE_COMMAND) {
+        game_set_error("现在不能移动，请先完成当前提示或退出商店。");
         return RC_INVALID_PHASE;
     }
     if (steps < DICE_MIN || steps > MAP_SIZE) {
+        game_set_error(
+            "步数须在 %d~%d 之间，例如：STEP 4", DICE_MIN, MAP_SIZE);
         return RC_INVALID_PARAMS;
     }
 

@@ -56,6 +56,19 @@ const char *game_last_error(void)
     return g_last_error;
 }
 
+void game_set_error(const char *fmt, ...)
+{
+    va_list ap;
+
+    if (fmt == NULL) {
+        g_last_error[0] = '\0';
+        return;
+    }
+    va_start(ap, fmt);
+    vsnprintf(g_last_error, sizeof(g_last_error), fmt, ap);
+    va_end(ap);
+}
+
 const char *result_code_name(ResultCode rc)
 {
     switch (rc) {
@@ -738,11 +751,7 @@ int game_next_player_index(const Game *g)
 
 int game_sell(Game *g, int32_t position)
 {
-    int rc = game_sell_property(g, position);
-    if (rc != RC_OK) {
-        set_error("出售失败");
-    }
-    return rc;
+    return game_sell_property(g, position);
 }
 
 static int handle_prompt_answer(Game *g, const char *value,
@@ -950,7 +959,8 @@ void game_settle_landing(Game *g)
 
     case CELL_JAIL:
         handle_jail_landing(g);
-        RICH_PRINTF("进入监狱，需关押 %d 天！\n", JAIL_ROUNDS);
+        RICH_PRINTF("您进了监狱，需停留 %d 回合后才能行动。\n",
+                    JAIL_ROUNDS);
         break;
 
     case CELL_TOOL_SHOP:

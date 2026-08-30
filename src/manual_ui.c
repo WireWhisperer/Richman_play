@@ -276,19 +276,35 @@ static int dispatch(Game *g, const char *s)
     }
     if (strcmp(cmd, "STEP") == 0) {
         int32_t v;
-        return parse_int_arg(s + i, &v) ? game_step(g, v) : RC_INVALID_PARAMS;
+        if (!parse_int_arg(s + i, &v)) {
+            game_set_error("命令格式不对。例如：STEP 4");
+            return RC_INVALID_PARAMS;
+        }
+        return game_step(g, v);
     }
     if (strcmp(cmd, "SELL") == 0) {
         int32_t v;
-        return parse_int_arg(s + i, &v) ? game_sell(g, v) : RC_INVALID_PARAMS;
+        if (!parse_int_arg(s + i, &v)) {
+            game_set_error("命令格式不对。例如：SELL 14");
+            return RC_INVALID_PARAMS;
+        }
+        return game_sell(g, v);
     }
     if (strcmp(cmd, "BLOCK") == 0) {
         int32_t v;
-        return parse_int_arg(s + i, &v) ? game_block(g, v) : RC_INVALID_PARAMS;
+        if (!parse_int_arg(s + i, &v)) {
+            game_set_error("命令格式不对。例如：BLOCK -3");
+            return RC_INVALID_PARAMS;
+        }
+        return game_block(g, v);
     }
     if (strcmp(cmd, "BOMB") == 0) {
         int32_t v;
-        return parse_int_arg(s + i, &v) ? game_bomb(g, v) : RC_INVALID_PARAMS;
+        if (!parse_int_arg(s + i, &v)) {
+            game_set_error("命令格式不对。例如：BOMB 5");
+            return RC_INVALID_PARAMS;
+        }
+        return game_bomb(g, v);
     }
     if (strcmp(cmd, "ROBOT") == 0) {
         return game_robot(g);
@@ -313,6 +329,7 @@ static int dispatch(Game *g, const char *s)
         game_quit(g);
         return 1;
     }
+    game_set_error("无法识别的命令。输入 HELP 查看可用命令。");
     return RC_INVALID_COMMAND;
 }
 

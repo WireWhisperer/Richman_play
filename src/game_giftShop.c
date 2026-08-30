@@ -25,7 +25,7 @@ int gift_shop_enter(Game *g, char *message, size_t message_size)
     PLAYER *player;
 
     if (g == NULL) {
-        write_message(message, message_size, "礼品屋进入失败：游戏状态无效。");
+        write_message(message, message_size, "礼品屋进入失败：请重新开始游戏后再试。");
         return RC_INVALID_PARAMS;
     }
 
@@ -38,7 +38,7 @@ int gift_shop_enter(Game *g, char *message, size_t message_size)
     }
     if (g->status != GAME_RUNNING || player->status != NORMAL) {
         write_message(message, message_size,
-                      "无法进入礼品屋：当前玩家不能行动。");
+                      "无法进入礼品屋：您本回合不能行动（医院/监狱或非您的回合）。");
         return RC_INVALID_PHASE;
     }
 
@@ -76,13 +76,13 @@ int gift_shop_answer(Game *g, const char *input,
     }
     if (g->phase != PHASE_PROMPT || g->prompt != PROMPT_GIFT_SHOP) {
         write_message(message, message_size,
-                      "输入失败：当前不在礼品屋选择阶段。");
+                      "现在不在礼品屋，无法选择礼品。走到礼品屋后再输入 1、2 或 3。");
         return RC_INVALID_PHASE;
     }
 
     player = game_current_player(g);
     if (player == NULL) {
-        write_message(message, message_size, "当前玩家无效。");
+        write_message(message, message_size, "当前没有可行动的玩家。");
         return RC_INVALID_PARAMS;
     }
 
@@ -94,7 +94,7 @@ int gift_shop_answer(Game *g, const char *input,
     if (*cursor < '1' || *cursor > '3') {
         close_gift_shop(g);
         write_message(message, message_size,
-                      "输入无效，视为放弃礼品，已离开礼品屋。");
+                      "输入无效，已当作放弃并离开礼品屋。下次请输入 1、2 或 3。");
         return RC_OK;
     }
 
@@ -121,7 +121,7 @@ int gift_shop_answer(Game *g, const char *input,
                  GOD_OF_WEALTH_TURNS);
         break;
     default:
-        snprintf(message, message_size, "礼品选择无效。");
+        snprintf(message, message_size, "礼品选择无效，请输入 1、2 或 3。");
         break;
     }
 

@@ -116,7 +116,7 @@ void game_boarditem_suc(Game *g, BoardItem *b, int8_t index)
     } else if (b->kind == ITEM_BLOCK) {
         player->position = (int8_t)b->position;
         game_remove_board_item(g, index);
-        RICH_PRINTF("您已被路障阻隔在%d处！\n", b->position);
+        RICH_PRINTF("您被路障拦住，停在位置 %d。\n", b->position);
     }
 }
 

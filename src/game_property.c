@@ -213,13 +213,14 @@ int land_answer_buy(Game *g, const char *value,
         return RC_INVALID_PARAMS;
     }
     if (g->phase != PHASE_PROMPT || g->prompt != PROMPT_BUY) {
-        snprintf(message, message_size, "当前不在购买提示阶段。");
+        snprintf(message, message_size,
+                 "现在不是购买提示，请先走到空地后再选择 Y/N。");
         return RC_INVALID_PHASE;
     }
 
     player = game_current_player(g);
     if (player == NULL) {
-        snprintf(message, message_size, "当前玩家无效。");
+        snprintf(message, message_size, "当前没有可行动的玩家。");
         return RC_INVALID_PARAMS;
     }
 
@@ -249,7 +250,7 @@ int land_answer_buy(Game *g, const char *value,
     price = cell->price;
     if (player->fund < price) {
         snprintf(message, message_size,
-                 "资金不足：需要 %d 元，当前只有 %d 元。",
+                 "资金不够：需要 %d 元，您现在有 %d 元。",
                  price, player->fund);
         return RC_OK;
     }
@@ -282,13 +283,14 @@ int land_answer_upgrade(Game *g, const char *value,
         return RC_INVALID_PARAMS;
     }
     if (g->phase != PHASE_PROMPT || g->prompt != PROMPT_UPGRADE) {
-        snprintf(message, message_size, "当前不在升级提示阶段。");
+        snprintf(message, message_size,
+                 "现在不是升级提示，请先走到自己的地产后再选择 Y/N。");
         return RC_INVALID_PHASE;
     }
 
     player = game_current_player(g);
     if (player == NULL) {
-        snprintf(message, message_size, "当前玩家无效。");
+        snprintf(message, message_size, "当前没有可行动的玩家。");
         return RC_INVALID_PARAMS;
     }
 
@@ -305,7 +307,7 @@ int land_answer_upgrade(Game *g, const char *value,
     if (prop->owner_index != g->current_index) {
         g->phase = PHASE_COMMAND;
         g->prompt = PROMPT_NONE;
-        snprintf(message, message_size, "此地不属于您。");
+        snprintf(message, message_size, "此地不属于您，无法升级。");
         return RC_OK;
     }
 
@@ -331,7 +333,7 @@ int land_answer_upgrade(Game *g, const char *value,
     cost = cell->upgrade_cost;
     if (player->fund < cost) {
         snprintf(message, message_size,
-                 "资金不足：升级需 %d 元，当前只有 %d 元。",
+                 "资金不够：升级需 %d 元，您现在有 %d 元。",
                  cost, player->fund);
         return RC_OK;
     }
@@ -357,32 +359,38 @@ int game_sell_property(Game *g, int32_t position)
     int32_t price;
 
     if (g == NULL) {
+        game_set_error("出售未成功：请确认位置正确且地产属于您。");
         return RC_INVALID_PARAMS;
     }
     if (g->status != GAME_RUNNING) {
+        game_set_error("游戏已结束，无法出售地产。");
         return RC_ACTION_AFTER_END;
     }
     if (g->phase != PHASE_COMMAND) {
+        game_set_error("现在不能出售，请先完成当前提示或退出商店。");
         return RC_INVALID_PHASE;
     }
 
     player = game_current_player(g);
     if (player == NULL || player->status != NORMAL) {
+        game_set_error("当前不能出售地产（非您的回合，或您在医院/监狱）。");
         return RC_INVALID_PHASE;
     }
     if (position < 0 || position >= MAP_SIZE) {
+        game_set_error("位置无效，请输入 0~%d 之间的地图位置。", MAP_SIZE - 1);
         return RC_INVALID_PARAMS;
     }
 
     prop_index = property_index_at(g, position);
     if (prop_index < 0) {
-        RICH_PRINTF("位置 %d 没有可出售的地产。\n", position);
+        RICH_PRINTF(
+            "位置 %d 没有您的地产，可用 QUERY 查看后再 SELL。\n", position);
         return RC_OK; /* 业务失败：不中断自动化流水线 */
     }
 
     prop = &g->properties[prop_index];
     if (prop->owner_index != g->current_index) {
-        RICH_PRINTF("位置 %d 的地产不属于您。\n", position);
+        RICH_PRINTF("位置 %d 的地产不是您的，无法出售。\n", position);
         return RC_OK; /* 业务失败：不中断自动化流水线 */
     }
 
