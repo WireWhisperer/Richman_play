@@ -93,14 +93,63 @@ int game_move_to(Game *g, int32_t steps, int8_t last_position)
         g->players[g->current_index].position = position;
 
         item_index = board_item_index(g, position);
-        if (item_index >= 0) {
-            game_boarditem_suc(g, &g->board_items[item_index], (int8_t)item_index);
-            /* 路障拦截或炸弹送医后停止继续前进 */
-            break;
+
+        if (item_index >= 0)
+        {
+            ItemKind kind = g->board_items[item_index].kind;
+
+            game_boarditem_suc(
+                g,
+                &g->board_items[item_index],
+                (int8_t)item_index);
+
+            /*
+             * 炸弹和路障会中止移动；
+             * 财神 F 只是拾取，不中止移动。
+             */
+            if (kind == ITEM_BOMB || kind == ITEM_BLOCK)
+            {
+                break;
+            }
         }
     }
 
     return position;
+}
+
+static void game_fortune_item_suc(Game *g, int item_index)
+{
+    PLAYER *player;
+
+    if (g == NULL ||
+        g->current_index < 0 ||
+        g->current_index >= g->user_count)
+    {
+        return;
+    }
+
+    if (item_index < 0 || item_index >= g->board_item_count)
+    {
+        return;
+    }
+
+    player = &g->players[g->current_index];
+
+    if (player->status != NORMAL)
+    {
+        return;
+    }
+
+    /* 获得 5 回合财神 Buff */
+    player->god_of_wealth_rounds = FORTUNE_BUFF_ROUNDS;
+
+    /* F 被拾取后从地图上消失 */
+    game_remove_board_item(g, item_index);
+
+    (void)printf(
+        "玩家 %c 获得财神 Buff，接下来 %d 回合免过路费！\n",
+        player->id,
+        FORTUNE_BUFF_ROUNDS);
 }
 
 void game_boarditem_suc(Game *g, BoardItem *b, int8_t index)

@@ -38,6 +38,7 @@ struct cJSON;
 #define JAIL_POS            49    /*监狱位置*/
 #define TOOL_POS            28    /*道具屋位置*/
 #define GIFT_POS            35    /*礼品屋位置*/
+#define FORTUNE_BUFF_ROUNDS 5     /*财神生效轮数*/
 
 /* ===== 统一错误码（规范 13） ===== */
 typedef enum {
@@ -230,7 +231,7 @@ void game_next_turn(Game *g);                   /* 回合切换与轮空（规�
 void game_check_finish(Game *g);                /* 破产/结束判定 */
 void game_boarditem_suc(Game *g, BoardItem *b, int8_t index);           /* 道具生效判定 */
 void game_remove_board_item(Game *g, int index);                        /* 清除道具 */
-
+static void game_fortune_item_suc(Game *g, int item_index);
 
 int tool_shop_enter(Game *g, char *message, size_t message_size);
 int tool_shop_answer(Game *g, const char *input,
