@@ -100,21 +100,16 @@ int game_step(Game *g, int32_t steps)
         game_set_error("现在不能移动，请先完成当前提示或退出商店。");
         return RC_INVALID_PHASE;
     }
-    /* STEP 支持非负整数：steps 为 0~2147483647；
-       0 表示原地结束回合（不移动、不触发落点），负数视为 INVALID_PARAMS */
+    /* STEP 支持非负整数：steps 为 0~2147483647；负数视为 INVALID_PARAMS */
     if (steps < 0 || steps > STEP_MAX) {
         game_set_error("步数须为 0~2147483647 的整数，例如：STEP 4");
         return RC_INVALID_PARAMS;
     }
 
     /* steps>70 时先对 70 取余，再按有效步数逐格移动。
-       取余结果为 0（steps>70 或 STEP 0）即不移动、不做落点处理，
-       但按合法 STEP 正常结束回合。 */
+       STEP 0 只是移动 0 格，其余与正数 STEP 完全一样：
+       移动（0 格）后照常触发落点判定，落点无提示则结束回合。 */
     effective = (steps > MAP_SIZE) ? (steps % MAP_SIZE) : steps;
-
-    if (effective == 0) {
-        return game_finish_action_turn(g);
-    }
 
     return move_current_player(g, effective, 0);
 }

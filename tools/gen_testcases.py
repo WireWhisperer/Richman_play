@@ -3,7 +3,7 @@
 
 覆盖：
   - 公园 PARK（14/49/63，到达/经过无事件、display_cells）
-  - STEP 0~2147483647（负数/小数/字符串非法；0 原地结束回合；70 整圈；71→1；140→0；2147483647→57）
+  - STEP 0~2147483647（负数/小数/字符串非法；0 移动0格并触发落点判定；70 整圈；71→1；140→0；2147483647→57）
   - 命令 ASCII 大小写不敏感
   - 地图财神完整生命周期（首次生成/候选回退/自然失效/领取/当轮免租/再生成/随机流错误）
   - ADVANCE_TURN、turn_number、fortune_assert、fields_absent、display_cells
@@ -137,13 +137,12 @@ NEW.append(C("TC-V2-PARK-006", "离开公园后可见符号恢复P",
                         "visible_symbol": "P", "visible_entity": "BASE"}]}))
 
 # ==================== B. STEP 规则 ====================
-NEW.append(C("TC-V2-STEP-001", "STEP 0合法：原地结束回合且不触发落点（小写step同样生效）",
-    PR([P("A", pos=1), P("Q", pos=20)], properties=[PROP(1, "A", 0)]),
+NEW.append(C("TC-V2-STEP-001", "STEP 0移动0格并触发落点判定（空地弹购买提示，小写step生效）",
+    PR([P("A", pos=1), P("Q", pos=20)]),
     [A("Step", steps=0)],
-    {"current_user": "Q", "turn_number": 2, "phase": "COMMAND",
-     "pending_prompt": None,
-     "players": [{"id": "A", "position": 1, "fund": 1000}],
-     "properties": [PROP(1, "A", 0)]}))
+    {"current_user": "A", "turn_number": 1, "phase": "PROMPT",
+     "pending_prompt": "BUY",
+     "players": [{"id": "A", "position": 1, "fund": 1000}]}))
 
 NEW.append(C("TC-V2-STEP-002", "STEP负数非法",
     PR([P("A", pos=0), P("Q", pos=20)]),
@@ -193,13 +192,12 @@ NEW.append(C("TC-V2-STEP-009", "STEP71对70取余移动1格",
     {"current_user": "Q", "turn_number": 2,
      "players": [{"id": "A", "position": 1}], "properties_absent": [1]}))
 
-NEW.append(C("TC-V2-STEP-010", "STEP140取余为0原地结束回合不触发落点",
-    PR([P("A", pos=1), P("Q", pos=20)], properties=[PROP(1, "A", 0)]),
+NEW.append(C("TC-V2-STEP-010", "STEP140取余为0仍触发落点判定（落点矿地获得点数）",
+    PR([P("A", pos=64), P("Q", pos=20)]),
     [A("STEP", steps=140)],
     {"current_user": "Q", "turn_number": 2, "phase": "COMMAND",
      "pending_prompt": None,
-     "players": [{"id": "A", "position": 1, "fund": 1000}],
-     "properties": [PROP(1, "A", 0)]}))
+     "players": [{"id": "A", "position": 64, "credit": 60, "fund": 1000}]}))
 
 NEW.append(C("TC-V2-STEP-011", "STEP2147483647取余57",
     PR([P("A", pos=0), P("Q", pos=20)]),
@@ -225,17 +223,18 @@ NEW.append(C("TC-V2-STEP-014", "混合大小写sTeP命令生效",
     {"current_user": "Q", "turn_number": 2,
      "players": [{"id": "A", "position": 3}], "properties_absent": [3]}))
 
-NEW.append(C("TC-V2-STEP-015", "取余0的STEP仍推进计时器并扣减财神回合",
-    PR([P("A", pos=1, god=3), P("Q", pos=20)]),
+NEW.append(C("TC-V2-STEP-015", "取余0的STEP在无事件落点仍推进计时器并扣减财神回合",
+    PR([P("A", pos=0, god=3), P("Q", pos=20)]),
     [A("STEP", steps=140)],
-    {"current_user": "Q", "turn_number": 2,
-     "players": [{"id": "A", "position": 1, "god_of_wealth_rounds": 2}]}))
-
-NEW.append(C("TC-V2-STEP-016", "STEP 0在自己地产上不触发升级提示",
-    PR([P("A", pos=1), P("Q", pos=20)], properties=[PROP(1, "A", 1)]),
-    [A("STEP", steps=0)],
     {"current_user": "Q", "turn_number": 2, "phase": "COMMAND",
      "pending_prompt": None,
+     "players": [{"id": "A", "position": 0, "god_of_wealth_rounds": 2}]}))
+
+NEW.append(C("TC-V2-STEP-016", "STEP 0在自己地产上触发升级提示",
+    PR([P("A", pos=1), P("Q", pos=20)], properties=[PROP(1, "A", 1)]),
+    [A("STEP", steps=0)],
+    {"current_user": "A", "turn_number": 1, "phase": "PROMPT",
+     "pending_prompt": "UPGRADE",
      "players": [{"id": "A", "position": 1}],
      "properties": [PROP(1, "A", 1)]}))
 
