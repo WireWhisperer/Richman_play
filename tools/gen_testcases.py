@@ -3,7 +3,7 @@
 
 覆盖：
   - 公园 PARK（14/49/63，到达/经过无事件、display_cells）
-  - STEP 1~2147483647（0/负数/小数/字符串非法；70 整圈；71→1；140→0；2147483647→57）
+  - STEP 0~2147483647（负数/小数/字符串非法；0 原地结束回合；70 整圈；71→1；140→0；2147483647→57）
   - 命令 ASCII 大小写不敏感
   - 地图财神完整生命周期（首次生成/候选回退/自然失效/领取/当轮免租/再生成/随机流错误）
   - ADVANCE_TURN、turn_number、fortune_assert、fields_absent、display_cells
@@ -137,11 +137,13 @@ NEW.append(C("TC-V2-PARK-006", "离开公园后可见符号恢复P",
                         "visible_symbol": "P", "visible_entity": "BASE"}]}))
 
 # ==================== B. STEP 规则 ====================
-NEW.append(C("TC-V2-STEP-001", "STEP 0非法（规范21.3示例回归）",
-    PR([P("A", pos=0), P("Q", pos=20)]),
-    [A("Step", steps=0)], {},
-    ee={"code": "INVALID_PARAMS", "action_index": 0,
-        "path": "actions[0].params.steps"}))
+NEW.append(C("TC-V2-STEP-001", "STEP 0合法：原地结束回合且不触发落点（小写step同样生效）",
+    PR([P("A", pos=1), P("Q", pos=20)], properties=[PROP(1, "A", 0)]),
+    [A("Step", steps=0)],
+    {"current_user": "Q", "turn_number": 2, "phase": "COMMAND",
+     "pending_prompt": None,
+     "players": [{"id": "A", "position": 1, "fund": 1000}],
+     "properties": [PROP(1, "A", 0)]}))
 
 NEW.append(C("TC-V2-STEP-002", "STEP负数非法",
     PR([P("A", pos=0), P("Q", pos=20)]),
@@ -228,6 +230,14 @@ NEW.append(C("TC-V2-STEP-015", "取余0的STEP仍推进计时器并扣减财神�
     [A("STEP", steps=140)],
     {"current_user": "Q", "turn_number": 2,
      "players": [{"id": "A", "position": 1, "god_of_wealth_rounds": 2}]}))
+
+NEW.append(C("TC-V2-STEP-016", "STEP 0在自己地产上不触发升级提示",
+    PR([P("A", pos=1), P("Q", pos=20)], properties=[PROP(1, "A", 1)]),
+    [A("STEP", steps=0)],
+    {"current_user": "Q", "turn_number": 2, "phase": "COMMAND",
+     "pending_prompt": None,
+     "players": [{"id": "A", "position": 1}],
+     "properties": [PROP(1, "A", 1)]}))
 
 # ==================== C. 命令大小写 ====================
 NEW.append(C("TC-V2-CMD-001", "小写roll消耗DICE流",
@@ -1156,11 +1166,11 @@ NEW.append(C("TC-US26-008", "STEP70移动整圈回到原位",
     [A("STEP", steps=70)],
     {"current_user": "Q",
      "players": [{"id": "A", "position": 0}]}))
-NEW.append(C("TC-US26-006", "STEP步数为0返回INVALID_PARAMS（v2.0变更）",
+NEW.append(C("TC-US26-006", "STEP步数为0原地结束回合",
     PR([P("A", pos=0), P("Q", pos=40)]),
-    [A("STEP", steps=0)], {},
-    ee={"code": "INVALID_PARAMS", "action_index": 0,
-        "path": "actions[0].params.steps"}))
+    [A("STEP", steps=0)],
+    {"current_user": "Q", "turn_number": 2,
+     "players": [{"id": "A", "position": 0}]}))
 NEW.append(C("TC-US26-009", "STEP允许超过一圈的步数",
     PR([P("A", pos=0), P("Q", pos=40)]),
     [A("STEP", steps=100), ANS("N")],

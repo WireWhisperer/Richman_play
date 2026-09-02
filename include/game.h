@@ -9,7 +9,7 @@
  *   - 删除监狱/医院/魔法屋/炸弹（BOMB）相关功能；地图 14/49/63 为公园 PARK；
  *   - 新增地图财神（10 回合后首次生成、5 回合自然消失、领取/失效后 1~10 回合再生成）；
  *   - 新增 turn_number、确定性随机流（SEQUENCE / XORSHIFT32 PRNG）、ADVANCE_TURN；
- *   - STEP 允许 1~2147483647，steps>70 时对 70 取余；
+ *   - STEP 允许 0~2147483647（非负整数），steps>70 时对 70 取余；
  *   - 输入 command 不区分 ASCII 大小写。
  */
 #ifndef RICH_GAME_H
@@ -267,7 +267,7 @@ int   game_next_player_index(const Game *g);            /* 按 users 顺序的�
 
 /* ===== Action 入口（规范 9；返回 0=成功，负数=ResultCode） ===== */
 int game_roll(Game *g);                                 /* ROLL：从 DICE 流取值并移动 */
-int game_step(Game *g, int32_t steps);                  /* STEP：1~2147483647，>70 对 70 取余后移动 */
+int game_step(Game *g, int32_t steps);                  /* STEP：0~2147483647，>70 对 70 取余后移动 */
 int game_sell(Game *g, int32_t position);               /* SELL：出售地产 */
 int game_block(Game *g, int32_t offset);                /* BLOCK：放置路障 */
 int game_robot(Game *g);                                /* ROBOT：清除前方十格道具 */

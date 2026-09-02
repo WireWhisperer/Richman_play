@@ -1258,7 +1258,7 @@ int game_help(char *buf, size_t bufsz)
     snprintf(buf, bufsz,
              "命令：\n"
              "  ROLL           掷骰子移动（1~6 步）\n"
-             "  STEP <n>       按指定步数移动（1~2147483647，超过 70 自动取余）\n"
+             "  STEP <n>       按指定步数移动（0~2147483647，超过 70 自动取余）\n"
              "  SELL <pos>     出售指定位置地产\n"
              "  BLOCK <off>    在偏移位置放置路障(-10~10)\n"
              "  ROBOT          清除前方十格路障\n"

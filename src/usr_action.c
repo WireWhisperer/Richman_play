@@ -100,15 +100,16 @@ int game_step(Game *g, int32_t steps)
         game_set_error("现在不能移动，请先完成当前提示或退出商店。");
         return RC_INVALID_PHASE;
     }
-    /* 规范 6：steps 必须为 1~2147483647 的整数；0/负数视为 INVALID_PARAMS */
-    if (steps < 1 || steps > STEP_MAX) {
-        game_set_error("步数须为 1~2147483647 的整数，例如：STEP 4");
+    /* STEP 支持非负整数：steps 为 0~2147483647；
+       0 表示原地结束回合（不移动、不触发落点），负数视为 INVALID_PARAMS */
+    if (steps < 0 || steps > STEP_MAX) {
+        game_set_error("步数须为 0~2147483647 的整数，例如：STEP 4");
         return RC_INVALID_PARAMS;
     }
 
-    /* 规范 6：steps>70 时先对 70 取余，再按有效步数逐格移动。
-       取余结果为 0 是合法 steps>70 产生的有效移动距离：不移动、
-       不做落点处理，但按合法 STEP 正常结束回合。 */
+    /* steps>70 时先对 70 取余，再按有效步数逐格移动。
+       取余结果为 0（steps>70 或 STEP 0）即不移动、不做落点处理，
+       但按合法 STEP 正常结束回合。 */
     effective = (steps > MAP_SIZE) ? (steps % MAP_SIZE) : steps;
 
     if (effective == 0) {

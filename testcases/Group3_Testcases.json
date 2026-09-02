@@ -459,7 +459,7 @@
     },
     {
       "case_id": "TC-V2-STEP-001",
-      "case_name": "STEP 0非法（规范21.3示例回归）",
+      "case_name": "STEP 0合法：原地结束回合且不触发落点（小写step同样生效）",
       "preset": {
         "users": [
           "A",
@@ -474,7 +474,7 @@
             "id": "A",
             "fund": 1000,
             "credit": 0,
-            "position": 0,
+            "position": 1,
             "status": "NORMAL",
             "items": {
               "BLOCK": 0,
@@ -495,7 +495,13 @@
             "god_of_wealth_rounds": 0
           }
         ],
-        "properties": [],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "A",
+            "level": 0
+          }
+        ],
         "map_items": [],
         "fortune": {
           "position": null,
@@ -512,12 +518,25 @@
           }
         }
       ],
-      "expected": {},
-      "expected_outcome": "ERROR",
-      "expected_error": {
-        "code": "INVALID_PARAMS",
-        "action_index": 0,
-        "path": "actions[0].params.steps"
+      "expected": {
+        "current_user": "Q",
+        "turn_number": 2,
+        "phase": "COMMAND",
+        "pending_prompt": null,
+        "players": [
+          {
+            "id": "A",
+            "position": 1,
+            "fund": 1000
+          }
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "A",
+            "level": 0
+          }
+        ]
       },
       "map_file": "map.json"
     },
@@ -1511,6 +1530,88 @@
             "id": "A",
             "position": 1,
             "god_of_wealth_rounds": 2
+          }
+        ]
+      },
+      "map_file": "map.json"
+    },
+    {
+      "case_id": "TC-V2-STEP-016",
+      "case_name": "STEP 0在自己地产上不触发升级提示",
+      "preset": {
+        "users": [
+          "A",
+          "Q"
+        ],
+        "current_user": "A",
+        "phase": "COMMAND",
+        "game_status": "RUNNING",
+        "turn_number": 1,
+        "players": [
+          {
+            "id": "A",
+            "fund": 1000,
+            "credit": 0,
+            "position": 1,
+            "status": "NORMAL",
+            "items": {
+              "BLOCK": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          },
+          {
+            "id": "Q",
+            "fund": 1000,
+            "credit": 0,
+            "position": 20,
+            "status": "NORMAL",
+            "items": {
+              "BLOCK": 0,
+              "ROBOT": 0
+            },
+            "god_of_wealth_rounds": 0
+          }
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "A",
+            "level": 1
+          }
+        ],
+        "map_items": [],
+        "fortune": {
+          "position": null,
+          "spawned_after_turn": null,
+          "remaining_map_turns": 0,
+          "next_spawn_after_turn": null
+        }
+      },
+      "actions": [
+        {
+          "command": "STEP",
+          "params": {
+            "steps": 0
+          }
+        }
+      ],
+      "expected": {
+        "current_user": "Q",
+        "turn_number": 2,
+        "phase": "COMMAND",
+        "pending_prompt": null,
+        "players": [
+          {
+            "id": "A",
+            "position": 1
+          }
+        ],
+        "properties": [
+          {
+            "position": 1,
+            "owner": "A",
+            "level": 1
           }
         ]
       },
@@ -11855,7 +11956,7 @@
     },
     {
       "case_id": "TC-US26-006",
-      "case_name": "STEP步数为0返回INVALID_PARAMS（v2.0变更）",
+      "case_name": "STEP步数为0原地结束回合",
       "preset": {
         "users": [
           "A",
@@ -11908,12 +12009,15 @@
           }
         }
       ],
-      "expected": {},
-      "expected_outcome": "ERROR",
-      "expected_error": {
-        "code": "INVALID_PARAMS",
-        "action_index": 0,
-        "path": "actions[0].params.steps"
+      "expected": {
+        "current_user": "Q",
+        "turn_number": 2,
+        "players": [
+          {
+            "id": "A",
+            "position": 0
+          }
+        ]
       },
       "map_file": "map.json"
     },

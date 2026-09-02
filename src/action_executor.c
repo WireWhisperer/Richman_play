@@ -112,9 +112,9 @@ int action_validate(const Game *g, const cJSON *action, ActionResult *out)
         int32_t steps;
         if (!cJSON_IsObject(params) ||
             !fu_json_get_int32(cJSON_GetObjectItemCaseSensitive(params, "steps"), &steps) ||
-            steps < 1 || steps > STEP_MAX) {
+            steps < 0 || steps > STEP_MAX) {
             set_param_error(out, RC_INVALID_PARAMS, c,
-                            "STEP 的 params.steps 必须为 1~%d 的整数", STEP_MAX);
+                            "STEP 的 params.steps 必须为 0~%d 的整数", STEP_MAX);
             return RC_INVALID_PARAMS;
         }
     } else if (strcasecmp(c, "SELL") == 0) {
