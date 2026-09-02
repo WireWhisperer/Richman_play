@@ -10,7 +10,6 @@
 
 #define GIFT_BONUS_FUND     2000
 #define GIFT_CREDIT_POINTS   200
-#define GOD_OF_WEALTH_TURNS    5
 
 static void write_message(char *buf, size_t bufsz, const char *text)
 {
@@ -38,7 +37,7 @@ int gift_shop_enter(Game *g, char *message, size_t message_size)
     }
     if (g->status != GAME_RUNNING || player->status != NORMAL) {
         write_message(message, message_size,
-                      "无法进入礼品屋：您本回合不能行动（医院/监狱或非您的回合）。");
+                      "无法进入礼品屋：您本回合不能行动。");
         return RC_INVALID_PHASE;
     }
 

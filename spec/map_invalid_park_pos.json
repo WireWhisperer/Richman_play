@@ -25,7 +25,7 @@
     },
     {
       "position": 4,
-      "type": "LAND_1",
+      "type": "PARK",
       "price": 200,
       "upgrade_cost": 200
     },

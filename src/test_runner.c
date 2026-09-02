@@ -169,11 +169,27 @@ static void outcome_error(RunOutcome *outcome, int code, const char *msg)
     snprintf(outcome->message, sizeof(outcome->message), "%s", msg);
 }
 
+/** 期望错误但实际错误与 expected_error 不匹配：按规范 17 记为 FAIL */
+static void outcome_error_mismatch(RunOutcome *outcome, int code, int action_index,
+                                   const char *path)
+{
+    char detail[512];
+    int abs_code = code < 0 ? -code : code;
+
+    outcome->result = RESULT_FAIL;
+    outcome->code = abs_code;
+    snprintf(detail, sizeof(detail), "实际错误与 expected_error 不匹配: code=%s action_index=%d",
+             result_code_name((ResultCode)abs_code), action_index);
+    if (path != NULL && path[0] != '\0') {
+        snprintf(detail + strlen(detail), sizeof(detail) - strlen(detail),
+                 " path=%s", path);
+    }
+    snprintf(outcome->message, sizeof(outcome->message), "%s", detail);
+}
+
 static int expects_error(const TestCase *tc)
 {
-    return tc->expected_result[0] != '\0' &&
-           (strcmp(tc->expected_result, "ERROR") == 0 ||
-            strcmp(tc->expected_result, "error") == 0);
+    return strcmp(tc->expected_outcome, "ERROR") == 0;
 }
 
 static int error_code_matches(const TestCase *tc, int code)
@@ -186,6 +202,25 @@ static int error_code_matches(const TestCase *tc, int code)
     }
     name = result_code_name((ResultCode)abs_code);
     return strcmp(name, tc->expected_error_code) == 0;
+}
+
+/** 比较 expected_error（规范 17）：code 必比；action_index/path 仅在写出时比较 */
+static int error_expectation_matches(const TestCase *tc, int code,
+                                     int action_index, const char *path)
+{
+    if (!error_code_matches(tc, code)) {
+        return 0;
+    }
+    if (tc->expected_error_action_index >= 0 &&
+        tc->expected_error_action_index != action_index) {
+        return 0;
+    }
+    if (tc->expected_error_path[0] != '\0') {
+        if (path == NULL || strcmp(path, tc->expected_error_path) != 0) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 /** 写入规范 13 格式的结果报告（PASS/FAIL/ERROR 都落盘） */
@@ -219,12 +254,19 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
 
     memset(outcome, 0, sizeof(*outcome));
     outcome->result = RESULT_ERROR;
+    memset(&ar, 0, sizeof(ar));
+    ar.action_index = -1;
 
     rc = case_validate_preset(tc->preset, errbuf, sizeof(errbuf));
     if (rc != RC_OK) {
-        if (expects_error(tc) && error_code_matches(tc, rc)) {
+        if (expects_error(tc) && error_expectation_matches(tc, rc, -1, "preset")) {
             outcome->result = RESULT_PASS;
             outcome->code = RC_OK;
+            write_report_file(tc, results_dir, outcome);
+            return 0;
+        }
+        if (expects_error(tc)) {
+            outcome_error_mismatch(outcome, rc, -1, "preset");
             write_report_file(tc, results_dir, outcome);
             return 0;
         }
@@ -237,6 +279,13 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
     if (load_map_for_case(&g, case_path, tc->map_file) != RC_OK) {
         snprintf(errbuf, sizeof(errbuf), "地图文件错误: %s (%s)",
                  tc->map_file, game_last_error());
+        if (expects_error(tc) &&
+            error_expectation_matches(tc, RC_INVALID_MAP, -1, "map_file")) {
+            outcome->result = RESULT_PASS;
+            outcome->code = RC_OK;
+            write_report_file(tc, results_dir, outcome);
+            return 0;
+        }
         outcome_error(outcome, RC_INVALID_MAP, errbuf);
         write_report_file(tc, results_dir, outcome);
         return 0;
@@ -245,7 +294,7 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
     game_reset(&g);
     rc = game_apply_preset(&g, tc->preset);
     if (rc != RC_OK) {
-        if (expects_error(tc) && error_code_matches(tc, rc)) {
+        if (expects_error(tc) && error_expectation_matches(tc, rc, -1, "preset")) {
             outcome->result = RESULT_PASS;
             outcome->code = RC_OK;
             write_report_file(tc, results_dir, outcome);
@@ -258,9 +307,15 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
 
     rc = action_execute_all(&g, tc->actions, &ar);
     if (rc != RC_OK) {
-        if (expects_error(tc) && error_code_matches(tc, rc)) {
+        if (expects_error(tc) &&
+            error_expectation_matches(tc, rc, ar.action_index, ar.error_path)) {
             outcome->result = RESULT_PASS;
             outcome->code = RC_OK;
+            write_report_file(tc, results_dir, outcome);
+            return 0;
+        }
+        if (expects_error(tc)) {
+            outcome_error_mismatch(outcome, rc, ar.action_index, ar.error_path);
             write_report_file(tc, results_dir, outcome);
             return 0;
         }
@@ -287,7 +342,7 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
         } else {
             snprintf(actual_path, sizeof(actual_path), "%s_actual.json", tc->case_id);
         }
-        if (actual_write_file(&g, tc->case_id, actual_path) != RC_OK) {
+        if (actual_write_file(&g, tc->case_id, tc->schema_version, actual_path) != RC_OK) {
             snprintf(errbuf, sizeof(errbuf), "Actual 导出失败: %s", actual_path);
             outcome_error(outcome, RC_IO_ERROR, errbuf);
             write_report_file(tc, results_dir, outcome);
@@ -297,7 +352,7 @@ static int runner_run_loaded_case(TestCase *tc, const char *case_path,
     }
 
     {
-        cJSON *actual = actual_build(&g, tc->case_id);
+        cJSON *actual = actual_build(&g, tc->case_id, tc->schema_version);
         const cJSON *actual_content =
             cJSON_GetObjectItemCaseSensitive(actual, "actual");
         rc = expected_check(tc->expected, actual_content, &outcome->match_err);
@@ -377,9 +432,11 @@ int runner_run_file(const char *path, const char *results_dir)
 
     tests = cJSON_GetObjectItemCaseSensitive(root, "tests");
     if (tests != NULL) {
-        /* 套件文件（补充条款 A）：顶层存在 tests 字段 */
+        /* 套件文件（规范 4.2）：顶层存在 tests 字段；
+           内层用例继承外层 schema_version 与默认 map_file（内层同名字段优先） */
         char schema[SCHEMA_VERSION_MAX];
         const cJSON *sv = cJSON_GetObjectItemCaseSensitive(root, "schema_version");
+        const cJSON *suite_map = cJSON_GetObjectItemCaseSensitive(root, "map_file");
         int i;
 
         if (!fu_json_get_string(sv, schema, sizeof(schema))) {
@@ -388,9 +445,9 @@ int runner_run_file(const char *path, const char *results_dir)
             failed_cases_add(path, "缺少 schema_version");
             return -1;
         }
-        if (strcmp(schema, "1.0") != 0) {
+        if (strcmp(schema, "2.0") != 0) {
             cJSON_Delete(root);
-            fprintf(stderr, "套件文件无效: %s：不支持的 schema_version: %s（当前为 1.0）\n",
+            fprintf(stderr, "套件文件无效: %s：不支持的 schema_version: %s（仅支持 2.0）\n",
                     path, schema);
             failed_cases_add(path, "不支持的 schema_version");
             return -1;
@@ -418,6 +475,11 @@ int runner_run_file(const char *path, const char *results_dir)
             if (copy == NULL) {
                 failures++;
                 continue;
+            }
+            /* 规范 4.2：内层缺少 map_file 时继承外层默认值 */
+            if (cJSON_GetObjectItemCaseSensitive(copy, "map_file") == NULL &&
+                cJSON_IsString(suite_map)) {
+                cJSON_AddStringToObject(copy, "map_file", suite_map->valuestring);
             }
             if (case_load_from_object(&tc, copy, schema, errbuf, sizeof(errbuf)) !=
                 RC_OK) {
@@ -478,10 +540,10 @@ int runner_run_file(const char *path, const char *results_dir)
 
 char *runner_report_json(const TestCase *tc, const RunOutcome *outcome)
 {
-    /* 规范 13 结果格式：
+    /* 规范 17 结果格式：
        { schema_version, case_id, result, errors: [{code,path,expected,actual,message}] } */
     cJSON *root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "schema_version", "1.0");
+    cJSON_AddStringToObject(root, "schema_version", "2.0");
     cJSON_AddStringToObject(root, "case_id", tc->case_id);
     cJSON_AddStringToObject(root, "result", test_result_to_str(outcome->result));
 

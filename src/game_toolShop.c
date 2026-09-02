@@ -7,7 +7,6 @@
 #define TOOL_SHOP_MIN_CREDIT 30
 #define BLOCK_PRICE          50
 #define ROBOT_PRICE          30
-#define BOMB_PRICE           50
 
 static int tool_shop_buy(Game *g, int32_t choice,
                          char *message, size_t message_size);
@@ -50,7 +49,6 @@ static const PLAYER *current_player_const(const Game *g)
 static int32_t item_total(const PLAYER *player)
 {
     return (int32_t)player->items.BLOCK +
-           (int32_t)player->items.BOMB +
            (int32_t)player->items.ROBOT;
 }
 
@@ -71,9 +69,7 @@ int tool_shop_show_catalog(char *buf, size_t bufsz)
         "道具屋商品与使用说明：\n"
         "1. 路障（50点）：使用 block n 放在当前位置前后10步内；"
         "玩家经过时会被拦截。\n"
-        "2. 机器娃娃（30点）：使用 robot 清除前方10步内的路障和炸弹。\n"
-        "3. 炸弹（50点）：使用 bomb n 放在当前位置前后10步内；"
-        "玩家经过时会被炸伤并送往医院。\n"
+        "2. 机器娃娃（30点）：使用 robot 清除前方10步内的路障。\n"
         "F. 退出道具屋（不区分大小写）。每位玩家最多持有%d个道具。",
         MAX_ITEM_TOTAL);
     return RC_OK;
@@ -92,10 +88,9 @@ int tool_shop_view_inventory(const Game *g, char *buf, size_t bufsz)
         buf, bufsz,
         "当前点数：%d；道具：%d/%d。\n"
         "路障：%d个（block n，拦截经过该位置的玩家）。\n"
-        "机器娃娃：%d个（robot，清除前方10步内的路障和炸弹）。\n"
-        "炸弹：%d个（bomb n，炸伤经过该位置的玩家并送往医院）。",
+        "机器娃娃：%d个（robot，清除前方10步内的路障）。",
         player->credit, item_total(player), MAX_ITEM_TOTAL,
-        player->items.BLOCK, player->items.ROBOT, player->items.BOMB);
+        player->items.BLOCK, player->items.ROBOT);
     return RC_OK;
 }
 
@@ -114,7 +109,7 @@ int tool_shop_enter(Game *g, char *message, size_t message_size)
 
     if (g->status != GAME_RUNNING || player->status != NORMAL) {
         write_message(message, message_size,
-                      "无法进入道具屋：您本回合不能行动（医院/监狱或非您的回合）。");
+                      "无法进入道具屋：您本回合不能行动。");
         return -RC_INVALID_PHASE;
     }
 
@@ -165,7 +160,7 @@ static void write_invalid_tool_shop_input(const Game *g,
     write_message(
         message,
         message_size,
-        "输入无效：请输入1、2、3购买道具，或输入F退出。您当前拥有点数 %d 点。",
+        "输入无效：请输入1、2购买道具，或输入F退出。您当前拥有点数 %d 点。",
         credit
     );
 }
@@ -179,7 +174,7 @@ int tool_shop_answer(Game *g, const char *input,
     if (g == NULL || g->phase != PHASE_PROMPT ||
         g->prompt != PROMPT_TOOL_SHOP) {
         write_message(message, message_size,
-                      "现在不在道具屋，无法购买。走到道具屋后再选 1/2/3 或 F。");
+                      "现在不在道具屋，无法购买。走到道具屋后再选 1、2 或 F。");
         return -RC_INVALID_PHASE;
     }
     if (cursor == NULL) {
@@ -199,7 +194,7 @@ int tool_shop_answer(Game *g, const char *input,
         if (*cursor == '\0') {
             return tool_shop_leave(g, message, message_size);
         }
-    } else if (*cursor >= '1' && *cursor <= '3') {
+    } else if (*cursor >= '1' && *cursor <= '2') {
         choice = (int32_t)(*cursor - '0');
         ++cursor;
         while (isspace(*cursor)) {
@@ -232,11 +227,6 @@ static int select_item(int32_t choice, ItemKind *kind,
         *price = ROBOT_PRICE;
         *name = "机器娃娃";
         return RC_OK;
-    case 3:
-        *kind = ITEM_BOMB;
-        *price = BOMB_PRICE;
-        *name = "炸弹";
-        return RC_OK;
     default:
         return -RC_INVALID_PARAMS;
     }
@@ -247,8 +237,6 @@ static int8_t *item_count(PLAYER *player, ItemKind kind)
     switch (kind) {
     case ITEM_BLOCK:
         return &player->items.BLOCK;
-    case ITEM_BOMB:
-        return &player->items.BOMB;
     case ITEM_ROBOT:
         return &player->items.ROBOT;
     default:
@@ -268,7 +256,7 @@ static int tool_shop_buy(Game *g, int32_t choice,
     if (player == NULL || g->phase != PHASE_PROMPT ||
         g->prompt != PROMPT_TOOL_SHOP) {
         write_message(message, message_size,
-                      "现在不在道具屋，无法购买。走到道具屋后再选 1/2/3 或 F。");
+                      "现在不在道具屋，无法购买。走到道具屋后再选 1、2 或 F。");
         return -RC_INVALID_PHASE;
     }
 
@@ -359,21 +347,10 @@ static int validate_item_action(Game *g, PLAYER **player)
         return -RC_ACTION_AFTER_END;
     }
     if (g->phase != PHASE_COMMAND || (*player)->status != NORMAL) {
-        game_set_error(
-            "现在不能使用道具，请先完成购买/升级提示或退出商店。");
+        game_set_error("现在不能使用道具，请先完成购买/升级提示或退出商店。");
         return -RC_INVALID_PHASE;
     }
     return RC_OK;
-}
-
-static const char *item_kind_cn(ItemKind kind)
-{
-    switch (kind) {
-    case ITEM_BLOCK: return "路障";
-    case ITEM_BOMB:  return "炸弹";
-    case ITEM_ROBOT: return "机器娃娃";
-    default:         return "道具";
-    }
 }
 
 static int place_board_item(Game *g, ItemKind kind, int32_t offset)
@@ -382,24 +359,19 @@ static int place_board_item(Game *g, ItemKind kind, int32_t offset)
     int8_t *count;
     int32_t target;
     int32_t insert_at;
-    const char *name = item_kind_cn(kind);
-    const char *cmd = (kind == ITEM_BOMB) ? "BOMB" : "BLOCK";
     int rc = validate_item_action(g, &player);
 
     if (rc != RC_OK) {
         return rc;
     }
     if (offset < -BLOCK_OFFSET_LIMIT || offset > BLOCK_OFFSET_LIMIT) {
-        game_set_error(
-            "偏移须在 -10 到 10 之间，例如：%s 3", cmd);
+        game_set_error("偏移须在 -10 到 10 之间，例如：BLOCK 3");
         return -RC_INVALID_PARAMS;
     }
 
     count = item_count(player, kind);
     if (count == NULL || *count <= 0) {
-        game_set_error(
-            "背包里没有%s。可用 QUERY 查看道具，或到道具屋购买。",
-            name);
+        game_set_error("背包里没有路障。可用 QUERY 查看道具，或到道具屋购买。");
         return -RC_INVALID_PARAMS;
     }
     if (g->board_item_count < 0 ||
@@ -410,9 +382,7 @@ static int place_board_item(Game *g, ItemKind kind, int32_t offset)
 
     target = normalize_position((int32_t)player->position + offset);
     if (board_item_index_at(g, target) >= 0) {
-        game_set_error(
-            "位置 %d 已有路障或炸弹，请换一个偏移（-10~10）。",
-            target);
+        game_set_error("位置 %d 已有路障，请换一个偏移（-10~10）。", target);
         return -RC_INVALID_PARAMS;
     }
 
@@ -434,11 +404,6 @@ int game_block(Game *g, int32_t offset)
     return place_board_item(g, ITEM_BLOCK, offset);
 }
 
-int game_bomb(Game *g, int32_t offset)
-{
-    return place_board_item(g, ITEM_BOMB, offset);
-}
-
 int game_robot(Game *g)
 {
     PLAYER *player;
@@ -451,7 +416,7 @@ int game_robot(Game *g)
     }
     if (player->items.ROBOT <= 0) {
         game_set_error(
-            "背包里没有机器娃娃，无法清理前方道具。可用 QUERY 查看，或到道具屋购买。");
+            "背包里没有机器娃娃，无法清理前方路障。可用 QUERY 查看，或到道具屋购买。");
         return -RC_INVALID_PARAMS;
     }
 
@@ -516,42 +481,17 @@ int tool_shop_use_item(Game *g, ItemKind kind, int32_t offset,
         }
         return rc;
 
-    case ITEM_BOMB:
-        if (player->items.BOMB <= 0) {
-            write_message(message, message_size,
-                          "背包里没有炸弹。可用 QUERY 查看道具，或到道具屋购买。");
-            return -RC_INVALID_PARAMS;
-        }
-        if (offset < -BLOCK_OFFSET_LIMIT || offset > BLOCK_OFFSET_LIMIT) {
-            write_message(message, message_size,
-                          "偏移须在 -10 到 10 之间，例如：BOMB 5");
-            return -RC_INVALID_PARAMS;
-        }
-        target = normalize_position((int32_t)player->position + offset);
-        rc = game_bomb(g, offset);
-        if (rc == RC_OK) {
-            write_message(message, message_size,
-                          "炸弹使用成功，已放置在地图%d号位置；"
-                          "经过者会被炸伤并送往医院。", target);
-        } else {
-            write_message(message, message_size, "%s",
-                          game_last_error()[0] != '\0'
-                              ? game_last_error()
-                              : "炸弹放置失败，请换一个偏移（-10~10）。");
-        }
-        return rc;
-
     case ITEM_ROBOT:
         if (player->items.ROBOT <= 0) {
             write_message(message, message_size,
-                          "背包里没有机器娃娃，无法清理前方道具。");
+                          "背包里没有机器娃娃，无法清理前方路障。");
             return -RC_INVALID_PARAMS;
         }
         before_count = g->board_item_count;
         rc = game_robot(g);
         if (rc == RC_OK) {
             write_message(message, message_size,
-                          "机器娃娃使用成功，已清除前方10步内%d个路障或炸弹。",
+                          "机器娃娃使用成功，已清除前方10步内%d个路障。",
                           before_count - g->board_item_count);
         } else {
             write_message(message, message_size, "%s",

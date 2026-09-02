@@ -3,46 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int skip_confined_turn(Game *g)
-{
-    PLAYER *player;
-    const char *status_cn;
-
-    if (g == NULL) {
-        return 0;
-    }
-
-    player = game_current_player(g);
-    if (player == NULL) {
-        return 0;
-    }
-
-    if (player->status != HOSPITAL && player->status != IMPRISONED) {
-        return 0;
-    }
-
-    status_cn = (player->status == HOSPITAL) ? "住院" : "监狱";
-    (void)game_print(
-        "当前玩家 %c：状态 %s，剩余轮数 %d，本回合无法行动。\n",
-        player->id,
-        status_cn,
-        (int)player->remaining_rounds
-    );
-
-    player->remaining_rounds--;
-    if (player->remaining_rounds <= 0) {
-        player->status = NORMAL;
-        player->remaining_rounds = 0;
-        (void)game_print(
-            "玩家 %c 已恢复自由，下次轮到时可以行动。\n",
-            player->id
-        );
-    }
-
-    game_finish_action_turn(g);
-    return 1;
-}
-
+/**
+ * 移动并结算：先逐格移动（含途中路障/财神），再处理落点；
+ * 落点不产生提示时结束回合。财神随机流错误向上传播。
+ */
 static int finish_move(Game *g)
 {
     if (g == NULL) {
@@ -51,7 +15,7 @@ static int finish_move(Game *g)
 
     game_settle_landing(g);
     if (g->phase != PHASE_PROMPT) {
-        game_finish_action_turn(g);
+        return game_finish_action_turn(g);
     }
     return RC_OK;
 }
@@ -83,17 +47,20 @@ static int move_current_player(Game *g, int32_t steps, int announce_roll)
     }
 
     last_position = g->players[g->current_index].position;
-    (void)game_move_to(g, steps, last_position);
+    rc = game_move_to(g, steps, last_position);
+    if (rc != RC_OK) {
+        return rc;
+    }
     if (announce_roll) {
         print_roll_result(g, steps);
     }
-    rc = finish_move(g);
-    return rc;
+    return finish_move(g);
 }
 
 int game_roll(Game *g)
 {
     int32_t steps;
+    int rc;
 
     if (g == NULL) {
         game_set_error("无法掷骰：游戏状态异常。");
@@ -108,17 +75,10 @@ int game_roll(Game *g)
         return RC_INVALID_PHASE;
     }
 
-    if (skip_confined_turn(g)) {
-        return RC_OK;
-    }
-
-    if (g->dice_next < g->dice_count) {
-        steps = g->dice_seq[g->dice_next++];
-    } else if (g->dice_preset_loaded) {
-        game_set_error("预置骰子已用完，无法再 ROLL。");
-        return RC_DICE_SEQUENCE_EMPTY;
-    } else {
-        steps = (int32_t)(rand() % DICE_MAX) + DICE_MIN;
+    /* 规范 7：每次 ROLL 从 DICE 流消费一个值（1~6） */
+    rc = random_next(g, RSTREAM_DICE, DICE_MIN, DICE_MAX, &steps);
+    if (rc != RC_OK) {
+        return rc;
     }
 
     return move_current_player(g, steps, 1);
@@ -126,6 +86,8 @@ int game_roll(Game *g)
 
 int game_step(Game *g, int32_t steps)
 {
+    int32_t effective;
+
     if (g == NULL) {
         game_set_error("无法移动：游戏状态异常。");
         return RC_INVALID_PARAMS;
@@ -138,14 +100,20 @@ int game_step(Game *g, int32_t steps)
         game_set_error("现在不能移动，请先完成当前提示或退出商店。");
         return RC_INVALID_PHASE;
     }
-    if (steps < 0) {
-        game_set_error("步数须为非负整数，例如：STEP 4");
+    /* 规范 6：steps 必须为 1~2147483647 的整数；0/负数视为 INVALID_PARAMS */
+    if (steps < 1 || steps > STEP_MAX) {
+        game_set_error("步数须为 1~2147483647 的整数，例如：STEP 4");
         return RC_INVALID_PARAMS;
     }
 
-    if (skip_confined_turn(g)) {
-        return RC_OK;
+    /* 规范 6：steps>70 时先对 70 取余，再按有效步数逐格移动。
+       取余结果为 0 是合法 steps>70 产生的有效移动距离：不移动、
+       不做落点处理，但按合法 STEP 正常结束回合。 */
+    effective = (steps > MAP_SIZE) ? (steps % MAP_SIZE) : steps;
+
+    if (effective == 0) {
+        return game_finish_action_turn(g);
     }
 
-    return move_current_player(g, steps, 0);
+    return move_current_player(g, effective, 0);
 }

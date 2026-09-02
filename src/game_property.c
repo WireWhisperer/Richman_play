@@ -106,7 +106,6 @@ void game_bankrupt_player(Game *g, int32_t player_index)
 
     g->players[player_index].status = BANKRUPT;
     g->players[player_index].fund = 0;
-    g->players[player_index].remaining_rounds = 0;
 
     for (i = g->property_count - 1; i >= 0; --i) {
         if (g->properties[i].owner_index == player_index) {
@@ -115,12 +114,21 @@ void game_bankrupt_player(Game *g, int32_t player_index)
     }
 }
 
-void game_finish_action_turn(Game *g)
+/**
+ * 结束当前玩家回合（规范 4.3 / 6 / 14）：
+ *   1) 财神回合扣减（领取当回合不扣减，规范 14.5）；
+ *   2) 地图财神保留/自然失效/到期生成（规范 14.3/14.4）；
+ *   3) turn_number+1 并切换到下一位未破产玩家；
+ *   4) 结束判定。
+ * @return RC_OK；财神随机流取数失败时返回对应错误码且不切换回合。
+ */
+int game_finish_action_turn(Game *g)
 {
     PLAYER *player;
+    int rc;
 
     if (g == NULL || g->phase == PHASE_PROMPT || g->status != GAME_RUNNING) {
-        return;
+        return RC_OK;
     }
 
     player = game_current_player(g);
@@ -130,8 +138,14 @@ void game_finish_action_turn(Game *g)
     }
     g->god_acquired_this_turn = false;
 
+    rc = game_process_fortune_turn_end(g);
+    if (rc != RC_OK) {
+        return rc;
+    }
+
     game_next_turn(g);
     game_check_finish(g);
+    return RC_OK;
 }
 
 void handle_land_landing(Game *g, int32_t position)
@@ -363,7 +377,7 @@ int game_sell_property(Game *g, int32_t position)
 
     player = game_current_player(g);
     if (player == NULL || player->status != NORMAL) {
-        game_set_error("当前不能出售地产（非您的回合，或您在医院/监狱）。");
+        game_set_error("当前不能出售地产（非您的回合）。");
         return RC_INVALID_PHASE;
     }
     if (position < 0 || position >= MAP_SIZE) {

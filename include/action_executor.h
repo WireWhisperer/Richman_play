@@ -16,8 +16,10 @@
 #include <stdbool.h>
 
 typedef struct {
-    int  code;               /* 0 = 成功；否则为 ResultCode（规范 13 错误码） */
+    int  code;               /* 0 = 成功；否则为 ResultCode（规范 18 错误码） */
     char message[256];       /* 人类可读的错误描述 */
+    int  action_index;       /* 出错 Action 在 actions 中的下标（规范 17 expected_error） */
+    char error_path[128];    /* 出错字段路径，如 actions[0].params.steps（规范 17） */
 } ActionResult;
 
 /** 按 phase 判断该 command 是否被允许（规范 4.1 允许的 Action 表） */

@@ -18,6 +18,7 @@ void get_rent(Game *g, Property prop)
         return;
     }
 
+    /* 规范 14.5：财神护佑时免租（领取当轮立即生效） */
     if (tenant->god_of_wealth_rounds > 0) {
         (void)game_print("财神护佑，本次免过路费。\n");
         return;
@@ -34,10 +35,6 @@ void get_rent(Game *g, Property prop)
     }
 
     owner = &g->players[land->owner_index];
-    if (owner->status == HOSPITAL || owner->status == IMPRISONED) {
-        (void)game_print("业主正在医院/监狱，本次免过路费。\n");
-        return;
-    }
 
     rent = property_rent(g, land);
     tenant->fund -= rent;
@@ -69,14 +66,21 @@ static int board_item_index(const Game *g, int32_t position)
     return -1;
 }
 
+/**
+ * 逐格移动（规范 6）：
+ *   每进入一格先检查地图道具（路障拦截并停止），再检查财神
+ *   （规范 14.4：第一个进入者立即领取，领取后移动继续）。
+ * @return RC_OK 成功；负数 = ResultCode（如随机流耗尽）
+ */
 int game_move_to(Game *g, int32_t steps, int8_t last_position)
 {
     int32_t step_index;
     int8_t position = last_position;
+    int rc;
 
     if (g == NULL || g->current_index < 0 ||
         g->current_index >= g->user_count) {
-        return -1;
+        return -RC_INVALID_PARAMS;
     }
 
     for (step_index = 0; step_index < steps; ++step_index) {
@@ -88,12 +92,20 @@ int game_move_to(Game *g, int32_t steps, int8_t last_position)
         item_index = board_item_index(g, position);
         if (item_index >= 0) {
             game_boarditem_suc(g, &g->board_items[item_index], (int8_t)item_index);
-            /* 路障拦截或炸弹送医后停止继续前进 */
+            /* 路障拦截后停止继续前进 */
             break;
+        }
+
+        /* 财神：第一个进入财神位置的玩家立即领取（规范 14.4/14.5） */
+        if (g->fortune.position == position) {
+            rc = game_process_fortune_pickup(g);
+            if (rc != RC_OK) {
+                return rc;
+            }
         }
     }
 
-    return position;
+    return RC_OK;
 }
 
 void game_boarditem_suc(Game *g, BoardItem *b, int8_t index)
@@ -106,14 +118,8 @@ void game_boarditem_suc(Game *g, BoardItem *b, int8_t index)
 
     player = &g->players[g->current_index];
 
-    if (b->kind == ITEM_BOMB) {
-        player->position = HOSPITAL_POS;
-        player->status = HOSPITAL;
-        player->remaining_rounds = HOSPITAL_ROUNDS;
-        game_remove_board_item(g, index);
-        (void)game_print("您踩到炸弹，被送往医院，需住院 %d 天！\n",
-                     HOSPITAL_ROUNDS);
-    } else if (b->kind == ITEM_BLOCK) {
+    /* v2.0 地图道具只剩 BLOCK（规范 5.3） */
+    if (b->kind == ITEM_BLOCK) {
         player->position = (int8_t)b->position;
         game_remove_board_item(g, index);
         (void)game_print("您被路障拦住，停在位置 %d。\n", b->position);

@@ -85,7 +85,7 @@
     },
     {
       "position": 14,
-      "type": "HOSPITAL"
+      "type": "PARK"
     },
     {
       "position": 15,
@@ -289,7 +289,7 @@
     },
     {
       "position": 49,
-      "type": "JAIL"
+      "type": "PARK"
     },
     {
       "position": 50,
@@ -371,7 +371,7 @@
     },
     {
       "position": 63,
-      "type": "MAGIC_HOUSE"
+      "type": "PARK"
     },
     {
       "position": 64,

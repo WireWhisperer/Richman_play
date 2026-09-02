@@ -12,7 +12,6 @@ SRCS = \
 	src/main.c \
 	src/game.c \
 	src/game_mine.c \
-	src/game_jail.c \
 	src/game_toolShop.c \
 	src/game_property.c \
 	src/game_giftShop.c \

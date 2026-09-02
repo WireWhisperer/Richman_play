@@ -7,10 +7,10 @@
  * 界面始终显示完整地图（29×8 边缘布局，规范 3.2 顺时针 0~69）：
  *   - 地块编号是数据属性（cells[].position / map.json 的 position），界面不显示，
  *     后续资产显示模块按 position 查询即可
- *   - 特殊地块符号：S 起点 / H 医院 / T 道具屋 / G 礼品屋 / P 监狱 / M 魔法屋 / $ 矿地
+ *   - 特殊地块符号：S 起点 / T 道具屋 / G 礼品屋 / P 公园 / $ 矿地 / F 财神
  *   - 普通地产：未购显示 0；已购显示等级 0~3，颜色与业主一致
  *   - 玩家符号 Q/A/S/J 按角色颜色显示；同位多玩家时优先当前玩家（规范 5）
- *   - 地图道具：# 路障 / @ 炸弹（规范 3.4）
+ *   - 地图道具：# 路障（v2.0 已删除炸弹）
  * 每次操作后重绘整张地图。
  */
 #include "manual_ui.h"
@@ -84,10 +84,17 @@ static void cell_content(const Game *g, int32_t pos, char *main_ch, int *color)
         return;
     }
 
-    /* 地图道具（规范 3.4 地图标记：# 路障 / @ 炸弹） */
+    /* 地图财神（规范 14）：显示 F */
+    if (g->fortune.position == pos) {
+        *main_ch = 'F';
+        *color = COL_YELLOW;
+        return;
+    }
+
+    /* 地图道具（规范 5.3 地图标记：# 路障） */
     const BoardItem *bi = game_board_item_at(g, pos);
     if (bi != NULL) {
-        *main_ch = (bi->kind == ITEM_BLOCK) ? '#' : '@';
+        *main_ch = '#';
         return;
     }
 
@@ -101,14 +108,12 @@ static void cell_content(const Game *g, int32_t pos, char *main_ch, int *color)
 
     /* 地块底色符号；普通地产未购统一显示 0 */
     switch (g->cells[pos].type) {
-    case CELL_START:       *main_ch = 'S'; break;
-    case CELL_HOSPITAL:    *main_ch = 'H'; break;
-    case CELL_TOOL_SHOP:   *main_ch = 'T'; break;
-    case CELL_GIFT_SHOP:   *main_ch = 'G'; break;
-    case CELL_JAIL:        *main_ch = 'P'; break;
-    case CELL_MAGIC_HOUSE: *main_ch = 'M'; break;
-    case CELL_MINE:        *main_ch = '$'; break;
-    default:               *main_ch = '0'; break;
+    case CELL_START:     *main_ch = 'S'; break;
+    case CELL_TOOL_SHOP: *main_ch = 'T'; break;
+    case CELL_GIFT_SHOP: *main_ch = 'G'; break;
+    case CELL_PARK:      *main_ch = 'P'; break;
+    case CELL_MINE:      *main_ch = '$'; break;
+    default:             *main_ch = '0'; break;
     }
 }
 
@@ -125,7 +130,7 @@ static void print_band_cell(const Game *g, int32_t pos)
  * 渲染完整地图（29×8 矩阵边缘，共 8 行 × 29 格，规范 3.2 顺时针）：
  *   第 0 行：0~28（左端 S 起点，右端 T 道具屋）
  *   第 1~6 行：左列 69~64、右列 29~34
- *   第 7 行：63~35（左端 M 魔法屋，右端 G 礼品屋）
+ *   第 7 行：63~35（左端 P 公园，右端 G 礼品屋）
  */
 static void render_map(const Game *g)
 {
@@ -293,18 +298,10 @@ static int dispatch(Game *g, const char *s)
     if (strcmp(cmd, "BLOCK") == 0) {
         int32_t v;
         if (!parse_int_arg(s + i, &v)) {
-            game_set_error("命令格式不对。例如：BLOCK -3");
+            game_set_error("命令格式不对。例如：BLOCK 3");
             return RC_INVALID_PARAMS;
         }
         return game_block(g, v);
-    }
-    if (strcmp(cmd, "BOMB") == 0) {
-        int32_t v;
-        if (!parse_int_arg(s + i, &v)) {
-            game_set_error("命令格式不对。例如：BOMB 5");
-            return RC_INVALID_PARAMS;
-        }
-        return game_bomb(g, v);
     }
     if (strcmp(cmd, "ROBOT") == 0) {
         return game_robot(g);
@@ -351,7 +348,7 @@ static void print_command_prompt(const Game *g)
                 const PLAYER *p = game_current_player_c(g);
                 int32_t credit = p != NULL ? p->credit : 0;
                 (void)game_print(
-                    "【道具屋】请输入 1/2/3 购买，或 F 退出（当前点数 %d）：",
+                    "【道具屋】请输入 1/2 购买，或 F 退出（当前点数 %d）：",
                     credit
                 );
             }

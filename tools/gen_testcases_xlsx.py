@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""将 Group3_Testcases.json 的全部用例导出为一张中文 xlsx 总览表（每行一个用例，按 id 排序）。"""
+"""将 Group3_Testcases.json（v2.0）的全部用例导出为一张中文 xlsx 总览表（每行一个用例，按 id 排序）。"""
 import json
 import os
 from openpyxl import Workbook
@@ -18,26 +18,29 @@ SRC = os.path.join(find_repo_root(), "testcases", "Group3_Testcases.json")
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "测试用例汇总表.xlsx")
 
 ID_NAME = {"Q": "钱夫人(Q)", "A": "阿土伯(A)", "S": "孙小美(S)", "J": "金贝贝(J)"}
-STATUS_NAME = {"NORMAL": "正常", "HOSPITAL": "住院", "JAIL": "入狱", "BANKRUPT": "破产"}
+STATUS_NAME = {"NORMAL": "正常", "BANKRUPT": "破产"}
 PHASE_NAME = {"COMMAND": "命令阶段", "PROMPT": "提示回答阶段", "ENDED": "已结束"}
 ERR_NAME = {
     "INVALID_JSON": "JSON 非法",
     "UNSUPPORTED_VERSION": "不支持的 schema_version",
+    "UNSUPPORTED_MODE": "不支持的 mode",
     "INVALID_PRESET": "前置状态非法",
     "INVALID_MAP": "地图错误",
     "INVALID_COMMAND": "不支持的命令",
     "INVALID_PARAMS": "参数非法",
     "INVALID_PHASE": "当前阶段不允许该命令",
     "DICE_SEQUENCE_EMPTY": "骰子序列耗尽",
+    "RANDOM_SEQUENCE_EMPTY": "随机流耗尽",
+    "RANDOM_VALUE_OUT_OF_RANGE": "随机流值越界",
     "ACTION_AFTER_END": "游戏结束后仍有操作",
 }
 FIELD_CN = {"fund": "资金", "credit": "点数", "position": "位置",
-            "status": "状态", "remaining_rounds": "剩余轮空",
-            "god_of_wealth_rounds": "财神回合"}
+            "status": "状态", "god_of_wealth_rounds": "财神回合",
+            "turn_number": "回合号"}
 
 
 def item_cn(kind):
-    return {"BLOCK": "路障", "BOMB": "炸弹", "ROBOT": "机器娃娃"}.get(kind, kind)
+    return {"BLOCK": "路障", "ROBOT": "机器娃娃"}.get(kind, kind)
 
 
 def describe_player(p):
@@ -45,9 +48,6 @@ def describe_player(p):
     st = p.get("status", "NORMAL")
     if st != "NORMAL":
         parts.append(STATUS_NAME.get(st, st))
-    rr = p.get("remaining_rounds", 0)
-    if rr:
-        parts.append(f"剩余轮空{rr}")
     it = p.get("items", {})
     has = [f"{item_cn(k)}×{v}" for k, v in it.items() if v]
     if has:
@@ -58,8 +58,22 @@ def describe_player(p):
     return "，".join(parts)
 
 
+def describe_fortune(f):
+    if not f:
+        return None
+    pos = f.get("position")
+    if pos is None:
+        s = "地图财神：无"
+    else:
+        s = f"地图财神：位置{pos}，保留{f.get('remaining_map_turns')}回合"
+    if f.get("next_spawn_after_turn") is not None:
+        s += f"，第{f['next_spawn_after_turn']}回合完成时生成"
+    return s
+
+
 def describe_preset(preset):
     lines = []
+    lines.append(f"回合号：{preset.get('turn_number', 1)}")
     cur = preset.get("current_user")
     if cur:
         lines.append(f"当前玩家：{ID_NAME.get(cur, cur)}")
@@ -74,6 +88,20 @@ def describe_preset(preset):
     if mis:
         lines.append("地图道具：" + "；".join(
             f"位置{m['position']}有{item_cn(m['type'])}" for m in mis))
+    f = describe_fortune(preset.get("fortune"))
+    if f:
+        lines.append(f)
+    rng = preset.get("random_control")
+    if rng:
+        mode = rng.get("mode")
+        if mode == "SEQUENCE":
+            streams = {k: list(v) for k, v in (rng.get("streams") or {}).items()}
+            if streams:
+                lines.append("随机流：" + "；".join(f"{k}={v}" for k, v in streams.items()))
+        else:
+            lines.append(f"随机流：{mode} seeds={rng.get('stream_seeds')}")
+    if preset.get("dice_sequence") is not None:
+        lines.append(f"骰子序列：{preset['dice_sequence']}")
     return "\n".join(lines)
 
 
@@ -88,16 +116,16 @@ def describe_action(a):
         return f"出售位置 {params.get('position')} 的地产（SELL）"
     if cmd == "BLOCK":
         return f"在偏移 {params.get('offset')} 处放置路障（BLOCK）"
-    if cmd == "BOMB":
-        return f"在偏移 {params.get('offset')} 处放置炸弹（BOMB）"
     if cmd == "ROBOT":
-        return "使用机器娃娃清除前方10格道具（ROBOT）"
+        return "使用机器娃娃清除前方10格路障（ROBOT）"
     if cmd == "QUERY":
         return "查询资产（QUERY）"
     if cmd == "HELP":
         return "查看帮助（HELP）"
     if cmd == "QUIT":
         return "退出游戏（QUIT）"
+    if cmd == "ADVANCE_TURN":
+        return "原地推进一回合（ADVANCE_TURN）"
     if cmd == "ANSWER":
         v = str(params.get("value", "")).upper()
         if v in ("Y", "N"):
@@ -106,10 +134,20 @@ def describe_action(a):
     return a.get("command", "")
 
 
-def describe_expected(exp, er, ec):
-    if er and er.upper() == "ERROR":
-        return f"预期产生错误：{ec}（{ERR_NAME.get(ec, '')}）"
+def describe_expected(exp, eo, ee):
+    if eo == "ERROR":
+        code = (ee or {}).get("code", "")
+        ai = (ee or {}).get("action_index")
+        path = (ee or {}).get("path", "")
+        s = f"预期产生错误：{code}（{ERR_NAME.get(code, '')}）"
+        if ai is not None:
+            s += f"，第{ai}个Action"
+        if path:
+            s += f"，路径{path}"
+        return s
     lines = []
+    if "turn_number" in exp:
+        lines.append(f"回合号：{exp['turn_number']}")
     if "current_user" in exp:
         lines.append(f"当前玩家：{ID_NAME.get(exp['current_user'], exp['current_user'])}")
     if "phase" in exp:
@@ -129,11 +167,14 @@ def describe_expected(exp, er, ec):
             if k == "id":
                 continue
             if k == "status":
-                fields.append(f"{FIELD_CN.get(k, k)}={STATUS_NAME.get(v, v)}")
+                fields.append(f"状态={STATUS_NAME.get(v, v)}")
             elif k == "items":
                 its = [f"{item_cn(kk)}×{vv}" for kk, vv in v.items() if vv]
                 if its:
                     fields.append("道具=" + "、".join(its))
+            elif k == "fields_absent":
+                if v:
+                    fields.append("不存在字段=" + "、".join(v))
             else:
                 fields.append(f"{FIELD_CN.get(k, k)}={v}")
         lines.append(prefix + ("：" + "，".join(fields) if fields else ""))
@@ -148,6 +189,19 @@ def describe_expected(exp, er, ec):
         lines.append("无道具位置：" + "、".join(str(x) for x in exp["map_items_absent"]))
     for d in exp.get("display_players") or []:
         lines.append(f"地图显示：位置{d['position']}显示{d['visible_user']}")
+    for d in exp.get("display_cells") or []:
+        lines.append(f"格子显示：位置{d['position']}（{d.get('base_type')}）显示"
+                     f"{d.get('visible_symbol')}（{d.get('visible_entity')}）")
+    if "fortune" in exp:
+        f = exp["fortune"]
+        if f.get("position") is not None:
+            lines.append(f"地图财神：位置{f['position']}，保留{f.get('remaining_map_turns')}回合")
+        else:
+            lines.append("地图财神：无"
+                         + (f"，第{f['next_spawn_after_turn']}回合完成时生成"
+                            if f.get("next_spawn_after_turn") is not None else ""))
+    if "fortune_assert" in exp:
+        lines.append("财神断言：" + json.dumps(exp["fortune_assert"], ensure_ascii=False))
     return "\n".join(lines)
 
 
@@ -171,11 +225,11 @@ def main():
         ops = "\n".join(f"{i + 1}. {describe_action(a)}" for i, a in enumerate(acts)) \
             if acts else "（无操作）"
         exp = describe_expected(t.get("expected", {}),
-                                t.get("expected_result"),
-                                t.get("expected_error_code"))
+                                t.get("expected_outcome", "SUCCESS"),
+                                t.get("expected_error"))
         ws.append([t["case_id"], t["case_name"], pre, ops, exp])
 
-    widths = [20, 32, 62, 40, 62]
+    widths = [20, 34, 66, 40, 66]
     for col, w in zip("ABCDE", widths):
         ws.column_dimensions[col].width = w
     for row in ws.iter_rows(min_row=2):
